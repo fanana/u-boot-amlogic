@@ -61,6 +61,7 @@ dtb-$(CONFIG_ARCH_MESON) += \
 	meson-gxbb-odroidc2.dtb \
 	meson-gxbb-nanopi-k2.dtb \
 	meson-gxl-s905x-p212.dtb \
+	meson-gxl-s805x-libretech-ac.dtb \
 	meson-gxl-s905x-libretech-cc.dtb \
 	meson-gxl-s905x-khadas-vim.dtb \
 	meson-gxm-khadas-vim2.dtb \
