@@ -1,0 +1,36 @@
+U-Boot for Amlogic U400
+=======================
+
+U400 is a reference board manufactured by Amlogic with the following
+specifications:
+
+ - Amlogic S905D2 ARM Cortex-A53 quad-core SoC
+ - XGB DDR4 SDRAM
+ - 10/100 Ethernet (Internal PHY)
+ - 1 x USB 3.0 Host
+ - eMMC
+ - SDcard
+ - Infrared receiver
+ - SDIO WiFi Module
+ - MIPI DSI Connector
+ - Audio HAT Connector
+ - PCI-E M.2 Connector
+ - etc ...
+
+Schematics are available from Amlogic on demand.
+
+Currently the u-boot port supports the following devices:
+ - [TODO] ....
+
+u-boot compilation
+==================
+
+ > export ARCH=arm
+ > export CROSS_COMPILE=aarch64-none-elf-
+ > make u400_defconfig
+ > make
+
+Image creation
+==============
+
+[TODO] ...
