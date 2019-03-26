@@ -105,6 +105,7 @@ dtb-$(CONFIG_ARCH_MESON) += \
 	meson-gxl-s905x-khadas-vim.dtb \
 	meson-gxm-khadas-vim2.dtb \
 	meson-axg-s400.dtb \
+	meson-g12a-sei510.dtb \
 	meson-g12a-u200.dtb
 dtb-$(CONFIG_TEGRA) += tegra20-harmony.dtb \
 	tegra20-medcom-wide.dtb \
