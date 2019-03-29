@@ -14,11 +14,20 @@
 #define CONFIG_ENV_SIZE		0x10000
 #define CONFIG_ENV_OFFSET	(-0x10000)
 
+#define CACHE_UUID "99207ae6-5207-11e9-999e-6f77a3612069;"
+#define SYSTEM_UUID "99f9b7ac-5207-11e9-8507-c3c037e393f3;"
+#define VENDOR_UUID "9d082802-5207-11e9-954c-cbbce08ba108;"
+#define USERDATA_UUID "9b976e42-5207-11e9-8f16-ff47ac594b22;"
 #define ROOT_UUID "ddb8c3f6-d94d-4394-b633-3134139cc2e0;"
-#define PARTS_DEFAULT \
-	"uuid_disk=${uuid_gpt_disk};" \
-	"name=boot,size=128M,bootable,uuid=${uuid_gpt_boot};" \
-	"name=rootfs,size=-,uuid="ROOT_UUID
+
+#define PARTS_DEFAULT                                        \
+	"uuid_disk=${uuid_gpt_disk};"  			\
+	"name=boot,size=64M,bootable,uuid=${uuid_gpt_boot};" \
+	"name=cache,size=1120M,uuid=" CACHE_UUID             \
+	"name=system,size=1280M,uuid=" SYSTEM_UUID           \
+	"name=vendor,size=256M,uuid=" VENDOR_UUID            \
+	"name=userdata,size=4138M,uuid=" USERDATA_UUID	\
+	"name=rootfs,size=-,uuid=" ROOT_UUID		
 
 #define BOOTENV_DEV_SYSTEM(devtypeu, devtypel, instance) \
 	"bootcmd_system=" \
@@ -43,27 +52,26 @@
 	func(MMC, mmc, 0) \
 	BOOT_TARGET_DEVICES_USB(func) \
 	func(PXE, pxe, na) \
-	func(DHCP, dhcp, na) \
+	func(DHCP, dhcp, na)
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
-	"partitions=" PARTS_DEFAULT "\0" \
-	"mmcdev=1\0" \
-	"bootpart=1\0" \
-	"gpio_recovery=88\0" \
+#define CONFIG_EXTRA_ENV_SETTINGS                                     \
+	"partitions=" PARTS_DEFAULT "\0"                              \
+	"mmcdev=1\0"                                                  \
+	"bootpart=1\0"                                                \
+	"gpio_recovery=88\0"                                          \
 	"check_recovery=gpio input ${gpio_recovery};test $? -eq 0;\0" \
-	"console=/dev/ttyAML0\0" \
-	"bootargs=no_console_suspend\0" \
-	"stdin=" STDIN_CFG "\0" \
-	"stdout=" STDOUT_CFG "\0" \
-	"stderr=" STDOUT_CFG "\0" \
-	"loadaddr=0x6000000\0" \
-	"fdt_addr_r=0x08008000\0" \
-	"scriptaddr=0x08000000\0" \
-	"kernel_addr_r=0x08080000\0" \
-	"pxefile_addr_r=0x01080000\0" \
-	"ramdisk_addr_r=0x13000000\0" \
-	"fdtfile=amlogic/" CONFIG_DEFAULT_DEVICE_TREE ".dtb\0" \
-	BOOTENV
+	"console=/dev/ttyAML0\0"                                      \
+	"bootargs=no_console_suspend\0"                               \
+	"stdin=" STDIN_CFG "\0"                                       \
+	"stdout=" STDOUT_CFG "\0"                                     \
+	"stderr=" STDOUT_CFG "\0"                                     \
+	"loadaddr=0x01000000\0"                                       \
+	"fdt_addr_r=0x01000000\0"                                     \
+	"scriptaddr=0x08000000\0"                                     \
+	"kernel_addr_r=0x01080000\0"                                  \
+	"pxefile_addr_r=0x01080000\0"                                 \
+	"ramdisk_addr_r=0x13000000\0"                                 \
+	"fdtfile=amlogic/" CONFIG_DEFAULT_DEVICE_TREE ".dtb\0" BOOTENV
 
 #include <configs/meson64.h>
 
