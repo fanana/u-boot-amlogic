@@ -18,5 +18,9 @@ int misc_init_r(void)
 	meson_eth_init(PHY_INTERFACE_MODE_RMII,
 		       MESON_USE_INTERNAL_RMII_PHY);
 
+	if (!env_get("serial#"))
+	{
+		env_set("serial#", "123456789SEI");
+	}
 	return 0;
 }

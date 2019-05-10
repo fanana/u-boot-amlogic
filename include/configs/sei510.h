@@ -94,7 +94,7 @@
 	"bootcmd_system=" \
 		"echo Loading Android boot partition...;" \
 		"mmc dev ${mmcdev};" \
-		"setenv bootargs ${bootargs} console=${console};" \
+		"setenv bootargs ${bootargs} console=${console} androidboot.serialno=${serial#};" \
 		"part start mmc ${mmcdev} ${bootpart} boot_start;" \
 		"part size mmc ${mmcdev} ${bootpart} boot_size;" \
 		"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
