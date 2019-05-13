@@ -20,7 +20,7 @@ int misc_init_r(void)
 
 	if (!env_get("serial#"))
 	{
-		env_set("serial#", "123456789SEI");
+		env_set("serial#", "AMLG12ASEI510");
 	}
 	return 0;
 }
