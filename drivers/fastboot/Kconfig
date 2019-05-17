@@ -86,6 +86,10 @@ config FASTBOOT_FLASH_NAND
 
 endchoice
 
+config FASTBOOT_FLASH_CUSTOM
+	bool "FASTBOOT on custom board partitions"
+	depends on FASTBOOT_FLASH
+
 config FASTBOOT_FLASH_MMC_DEV
 	int "Define FASTBOOT MMC FLASH default device"
 	depends on FASTBOOT_FLASH_MMC
