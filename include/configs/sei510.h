@@ -33,6 +33,10 @@
 	"bootcmd_fastboot=" \
 		"sm reboot_reason reason;" \
 		"setenv run_fastboot 0;" \
+		"if test \"${boot_source}\" = \"usb\"; then " \
+			"echo Fastboot forced by usb rom boot;" \
+			"setenv run_fastboot 1;" \
+		"fi;" \
 		"if gpt verify mmc ${mmcdev} ${partitions}; then; " \
 		"else " \
 			"echo Broken MMC partition scheme;" \
@@ -108,7 +112,6 @@
 		"system "
 
 #define BOOT_TARGET_DEVICES(func) \
-	func(ROMUSB, romusb, na)  \
 	func(FASTBOOT, fastboot, na) \
 	func(RECOVERY, recovery, na) \
 	func(SYSTEM, system, na) \
