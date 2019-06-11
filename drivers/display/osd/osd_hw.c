@@ -2649,7 +2649,10 @@ void osd_init_hw(void)
 			data32 &= ~(0x1f << 5); /* bit[9:5] HOLD_FIFO_LINES */
 			data32 |= 0x18 << 5;
 		} else {
-			data32 |= 4 << 5;  /* hold_fifo_lines */
+			if (get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_G12A)
+				data32 |= 8 << 5;  /* hold_fifo_lines */
+			else
+				data32 |= 4 << 5;  /* hold_fifo_lines */
 		}
 		/* burst_len_sel: 3=64 */
 		if (get_cpu_id().family_id >= MESON_CPU_MAJOR_ID_G12A) {
