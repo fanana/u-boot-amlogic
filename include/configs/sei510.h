@@ -9,25 +9,43 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+#ifndef CONSOLEDEV
+#define CONSOLEDEV "ttyAML0"
+#endif
+
 #define CONFIG_SYS_MMC_ENV_DEV	1
 #define CONFIG_SYS_MMC_ENV_PART	1
 #define CONFIG_ENV_SIZE		0x10000
 #define CONFIG_ENV_OFFSET	(-0x10000)
 
-#define CACHE_UUID "99207ae6-5207-11e9-999e-6f77a3612069;"
-#define SYSTEM_UUID "99f9b7ac-5207-11e9-8507-c3c037e393f3;"
-#define VENDOR_UUID "9d082802-5207-11e9-954c-cbbce08ba108;"
-#define USERDATA_UUID "9b976e42-5207-11e9-8f16-ff47ac594b22;"
-#define ROOT_UUID "ddb8c3f6-d94d-4394-b633-3134139cc2e0;"
+// #define CACHE_UUID "99207ae6-5207-11e9-999e-6f77a3612069;"
+// #define SYSTEM_UUID "99f9b7ac-5207-11e9-8507-c3c037e393f3;"
+// #define VENDOR_UUID "9d082802-5207-11e9-954c-cbbce08ba108;"
+// #define USERDATA_UUID "9b976e42-5207-11e9-8f16-ff47ac594b22;"
+// #define VBMETA_UUID "3d5c5ca0-9813-11e9-a9a1-13d3db2901c4;"
+// #define ROOT_UUID "ddb8c3f6-d94d-4394-b633-3134139cc2e0;"
 
 #define PARTS_DEFAULT                                        \
 	"uuid_disk=${uuid_gpt_disk};"  			\
 	"name=boot,size=64M,bootable,uuid=${uuid_gpt_boot};" \
-	"name=cache,size=1120M,uuid=" CACHE_UUID             \
-	"name=system,size=1280M,uuid=" SYSTEM_UUID           \
-	"name=vendor,size=256M,uuid=" VENDOR_UUID            \
-	"name=userdata,size=4138M,uuid=" USERDATA_UUID	\
-	"name=rootfs,size=-,uuid=" ROOT_UUID
+	"name=cache,size=1120M,uuid=${uuid_gpt_cache}"             \
+	"name=system,size=1280M,uuid=${uuid_gpt_system}"           \
+	"name=vendor,size=256M,uuid=${uuid_gpt_vendor}"            \
+	"name=userdata,size=4138M,uuid=${uuid_gpt_userdata}"	\
+	"name=vbmeta,size=1M,uuid=${uuid_gpt_vbmeta}"             \
+
+#if defined(CONFIG_CMD_AVB)
+#define AVB_VERIFY_CHECK "if run avb_verify; then " \
+				"echo AVB verification OK.;" \
+				"setenv bootargs \"$bootargs $avb_bootargs\";" \
+			"else " \
+				"echo AVB verification failed.;" \
+			"exit; fi;"
+#define AVB_VERIFY_CMD "avb_verify=avb init 1; avb verify;\0"
+#else
+#define AVB_VERIFY_CHECK ""
+#define AVB_VERIFY_CMD ""
+#endif
 
 #define BOOTENV_DEV_FASTBOOT(devtypeu, devtypel, instance) \
 	"bootcmd_fastboot=" \
@@ -98,9 +116,10 @@
 	"bootcmd_system=" \
 		"echo Loading Android boot partition...;" \
 		"mmc dev ${mmcdev};" \
-		"setenv bootargs ${bootargs} console=${console} androidboot.serialno=${serial#};" \
+		"setenv bootargs \"${bootargs} console=" CONSOLEDEV ",115200 androidboot.serialno=${serial#}\";" \
 		"part start mmc ${mmcdev} ${bootpart} boot_start;" \
 		"part size mmc ${mmcdev} ${bootpart} boot_size;" \
+		AVB_VERIFY_CHECK \
 		"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
 			"echo Running Android...;" \
 			"bootm ${loadaddr};" \
@@ -118,11 +137,12 @@
 
 #define CONFIG_EXTRA_ENV_SETTINGS                                     \
 	"partitions=" PARTS_DEFAULT "\0"                              \
+	AVB_VERIFY_CMD \
 	"mmcdev=1\0"                                                  \
 	"bootpart=1\0"                                                \
 	"gpio_recovery=88\0"                                          \
 	"check_button=gpio input ${gpio_recovery};test $? -eq 0;\0"   \
-	"console=/dev/ttyAML0\0"                                      \
+	"console=/dev/" CONSOLEDEV "\0"                                      \
 	"bootargs=no_console_suspend\0"                               \
 	"stdin=" STDIN_CFG "\0"                                       \
 	"stdout=" STDOUT_CFG "\0"                                     \
