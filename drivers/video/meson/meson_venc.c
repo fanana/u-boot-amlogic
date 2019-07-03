@@ -23,7 +23,9 @@ enum meson_venc_source {
 };
 
 #define HHI_VDAC_CNTL0		0x2F4 /* 0xbd offset in data sheet */
+#define HHI_VDAC_CNTL0_G12A	0x2EC /* 0xbd offset in data sheet */
 #define HHI_VDAC_CNTL1		0x2F8 /* 0xbe offset in data sheet */
+#define HHI_VDAC_CNTL1_G12A	0x2F0 /* 0xbe offset in data sheet */
 
 struct meson_cvbs_enci_mode {
 	unsigned int mode_tag;
@@ -1448,8 +1450,13 @@ static void meson_venci_cvbs_mode_set(struct meson_vpu_priv *priv,
 	else if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_GXL) ||
 		 meson_vpu_is_compatible(priv, VPU_COMPATIBLE_GXM))
 		hhi_write(HHI_VDAC_CNTL0, 0xf0001);
+	else if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_G12A))
+		hhi_write(HHI_VDAC_CNTL0_G12A, 0x906001);
 
-	hhi_write(HHI_VDAC_CNTL1, 0);
+	if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_G12A))
+		hhi_write(HHI_VDAC_CNTL1_G12A, 0);
+	else
+		hhi_write(HHI_VDAC_CNTL1, 0);
 }
 
 void meson_vpu_setup_venc(struct udevice *dev,

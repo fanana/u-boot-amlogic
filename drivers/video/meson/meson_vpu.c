@@ -36,6 +36,8 @@ static int meson_vpu_setup_mode(struct udevice *dev, struct udevice *disp)
 	bool is_cvbs = false;
 	int ret = 0;
 
+	debug("%s:%d\n", __func__, __LINE__);
+
 	if (disp) {
 		ret = display_read_timing(disp, &timing);
 		if (ret) {
@@ -57,12 +59,14 @@ cvbs:
 		uc_priv->xsize = 720;
 		uc_priv->ysize = 576;
 	}
+	debug("%s:%d\n", __func__, __LINE__);
 
 	uc_priv->bpix = VPU_MAX_LOG2_BPP;
 
 	meson_fb.is_cvbs = is_cvbs;
 	meson_fb.xsize = uc_priv->xsize;
 	meson_fb.ysize = uc_priv->ysize;
+	debug("%s:%d\n", __func__, __LINE__);
 
 	/* Move the framebuffer to the end of addressable ram */
 	meson_fb.fb_size = ALIGN(meson_fb.xsize * meson_fb.ysize *
@@ -70,15 +74,21 @@ cvbs:
 				 MESON_VPU_OVERSCAN, EFI_PAGE_SIZE);
 	meson_fb.base = gd->bd->bi_dram[0].start +
 			gd->bd->bi_dram[0].size - meson_fb.fb_size;
+	debug("%s:%d\n", __func__, __LINE__);
 
 	/* Override the framebuffer address */
 	uc_plat->base = meson_fb.base;
+	debug("%s:%d\n", __func__, __LINE__);
 
 	meson_vpu_setup_plane(dev, timing.flags & DISPLAY_FLAGS_INTERLACED);
+	debug("%s:%d\n", __func__, __LINE__);
 	meson_vpu_setup_venc(dev, &timing, is_cvbs);
+	debug("%s:%d\n", __func__, __LINE__);
 	meson_vpu_setup_vclk(dev, &timing, is_cvbs);
+	debug("%s:%d\n", __func__, __LINE__);
 
 	video_set_flush_dcache(dev, 1);
+	debug("%s:%d ret\n", __func__, __LINE__);
 
 	return 0;
 }
@@ -87,6 +97,7 @@ static const struct udevice_id meson_vpu_ids[] = {
 	{ .compatible = "amlogic,meson-gxbb-vpu", .data = VPU_COMPATIBLE_GXBB },
 	{ .compatible = "amlogic,meson-gxl-vpu", .data = VPU_COMPATIBLE_GXL },
 	{ .compatible = "amlogic,meson-gxm-vpu", .data = VPU_COMPATIBLE_GXM },
+	{ .compatible = "amlogic,meson-g12a-vpu", .data = VPU_COMPATIBLE_G12A },
 	{ }
 };
 

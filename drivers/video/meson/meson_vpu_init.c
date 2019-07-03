@@ -12,7 +12,9 @@
 
 /* HHI Registers */
 #define HHI_VDAC_CNTL0		0x2F4 /* 0xbd offset in data sheet */
+#define HHI_VDAC_CNTL0_G12A	0x2EC /* 0xbd offset in data sheet */
 #define HHI_VDAC_CNTL1		0x2F8 /* 0xbe offset in data sheet */
+#define HHI_VDAC_CNTL1_G12A	0x2F0 /* 0xbe offset in data sheet */
 #define HHI_HDMI_PHY_CNTL0	0x3a0 /* 0xe8 offset in data sheet */
 
 /* OSDx_CTRL_STAT2 */
@@ -111,6 +113,34 @@ static int eotf_bypass_coeff[EOTF_COEFF_SIZE] = {
 	EOTF_COEFF_NORM(0.0),	EOTF_COEFF_NORM(0.0),	EOTF_COEFF_NORM(1.0),
 	EOTF_COEFF_RIGHTSHIFT /* right shift */
 };
+
+static void meson_viu_set_g12a_osd1_matrix(struct meson_vpu_priv *priv,
+					   int *m, bool csc_on)
+{
+	/* VPP WRAP OSD1 matrix */
+	writel(((m[0] & 0xfff) << 16) | (m[1] & 0xfff),
+		priv->io_base + _REG(VPP_WRAP_OSD1_MATRIX_PRE_OFFSET0_1));
+	writel(m[2] & 0xfff,
+		priv->io_base + _REG(VPP_WRAP_OSD1_MATRIX_PRE_OFFSET2));
+	writel(((m[3] & 0x1fff) << 16) | (m[4] & 0x1fff),
+		priv->io_base + _REG(VPP_WRAP_OSD1_MATRIX_COEF00_01));
+	writel(((m[5] & 0x1fff) << 16) | (m[6] & 0x1fff),
+		priv->io_base + _REG(VPP_WRAP_OSD1_MATRIX_COEF02_10));
+	writel(((m[7] & 0x1fff) << 16) | (m[8] & 0x1fff),
+		priv->io_base + _REG(VPP_WRAP_OSD1_MATRIX_COEF11_12));
+	writel(((m[9] & 0x1fff) << 16) | (m[10] & 0x1fff),
+		priv->io_base + _REG(VPP_WRAP_OSD1_MATRIX_COEF20_21));
+	writel((m[11] & 0x1fff) << 16,
+		priv->io_base +	_REG(VPP_WRAP_OSD1_MATRIX_COEF22));
+
+	writel(((m[18] & 0xfff) << 16) | (m[19] & 0xfff),
+		priv->io_base + _REG(VPP_WRAP_OSD1_MATRIX_OFFSET0_1));
+	writel(m[20] & 0xfff,
+		priv->io_base + _REG(VPP_WRAP_OSD1_MATRIX_OFFSET2));
+
+	writel_bits(BIT(0), csc_on ? BIT(0) : 0,
+		priv->io_base + _REG(VPP_WRAP_OSD1_MATRIX_EN_CTRL));
+}
 
 static void meson_viu_set_osd_matrix(struct meson_vpu_priv *priv,
 				     enum viu_matrix_sel_e m_select,
@@ -327,32 +357,53 @@ void meson_vpu_init(struct udevice *dev)
 	struct meson_vpu_priv *priv = dev_get_priv(dev);
 	u32 reg;
 
+	debug("%s:%d\n", __func__, __LINE__);
+
 	/* vpu initialization */
 	writel(0x210000, priv->io_base + _REG(VPU_RDARB_MODE_L1C1));
 	writel(0x10000, priv->io_base + _REG(VPU_RDARB_MODE_L1C2));
 	writel(0x900000, priv->io_base + _REG(VPU_RDARB_MODE_L2C1));
 	writel(0x20000, priv->io_base + _REG(VPU_WRARB_MODE_L2C1));
 
+	debug("%s:%d\n", __func__, __LINE__);
+
 	/* Disable CVBS VDAC */
-	hhi_write(HHI_VDAC_CNTL0, 0);
-	hhi_write(HHI_VDAC_CNTL1, 8);
+	if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_G12A)) {
+		hhi_write(HHI_VDAC_CNTL0_G12A, 0);
+		hhi_write(HHI_VDAC_CNTL1_G12A, 8);
+	} else {
+		hhi_write(HHI_VDAC_CNTL0, 0);
+		hhi_write(HHI_VDAC_CNTL1, 8);
+	}
+
+	debug("%s:%d\n", __func__, __LINE__);
 
 	/* Power Down Dacs */
 	writel(0xff, priv->io_base + _REG(VENC_VDAC_SETTING));
 
+	debug("%s:%d\n", __func__, __LINE__);
+
 	/* Disable HDMI PHY */
 	hhi_write(HHI_HDMI_PHY_CNTL0, 0);
 
+	debug("%s:%d\n", __func__, __LINE__);
+
 	/* Disable HDMI */
 	writel_bits(0x3, 0, priv->io_base + _REG(VPU_HDMI_SETTING));
+
+	debug("%s:%d\n", __func__, __LINE__);
 
 	/* Disable all encoders */
 	writel(0, priv->io_base + _REG(ENCI_VIDEO_EN));
 	writel(0, priv->io_base + _REG(ENCP_VIDEO_EN));
 	writel(0, priv->io_base + _REG(ENCL_VIDEO_EN));
 
+	debug("%s:%d\n", __func__, __LINE__);
+
 	/* Disable VSync IRQ */
 	writel(0, priv->io_base + _REG(VENC_INTCTRL));
+
+	debug("%s:%d\n", __func__, __LINE__);
 
 	/* set dummy data default YUV black */
 	if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_GXL)) {
@@ -363,32 +414,45 @@ void meson_vpu_init(struct udevice *dev)
 		writel(0x20000, priv->io_base + _REG(VPP_DOLBY_CTRL));
 		writel(0x1020080,
 		       priv->io_base + _REG(VPP_DUMMY_DATA1));
-	}
+	} else if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_G12A))
+		writel(0xf, priv->io_base + _REG(DOLBY_PATH_CTRL));
+
+	debug("%s:%d\n", __func__, __LINE__);
 
 	/* Initialize vpu fifo control registers */
-	writel(readl(priv->io_base + _REG(VPP_OFIFO_SIZE)) |
-			0x77f, priv->io_base + _REG(VPP_OFIFO_SIZE));
+	if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_G12A))
+		writel(0xfff << 20 | 0x1000,
+			       priv->io_base + _REG(VPP_OFIFO_SIZE));
+	else
+		writel(readl(priv->io_base + _REG(VPP_OFIFO_SIZE)) |
+				0x77f, priv->io_base + _REG(VPP_OFIFO_SIZE));
 	writel(0x08080808, priv->io_base + _REG(VPP_HOLD_LINES));
 
-	/* Turn off preblend */
-	writel_bits(VPP_PREBLEND_ENABLE, 0,
-		    priv->io_base + _REG(VPP_MISC));
+	debug("%s:%d\n", __func__, __LINE__);
 
-	/* Turn off POSTBLEND */
-	writel_bits(VPP_POSTBLEND_ENABLE, 0,
-		    priv->io_base + _REG(VPP_MISC));
+	if (!meson_vpu_is_compatible(priv, VPU_COMPATIBLE_G12A)) {
+		/* Turn off preblend */
+		writel_bits(VPP_PREBLEND_ENABLE, 0,
+			    priv->io_base + _REG(VPP_MISC));
 
-	/* Force all planes off */
-	writel_bits(VPP_OSD1_POSTBLEND | VPP_OSD2_POSTBLEND |
-		    VPP_VD1_POSTBLEND | VPP_VD2_POSTBLEND |
-		    VPP_VD1_PREBLEND | VPP_VD2_PREBLEND, 0,
-		    priv->io_base + _REG(VPP_MISC));
+		/* Turn off POSTBLEND */
+		writel_bits(VPP_POSTBLEND_ENABLE, 0,
+			    priv->io_base + _REG(VPP_MISC));
 
-	/* Setup default VD settings */
-	writel(4096,
-	       priv->io_base + _REG(VPP_PREBLEND_VD1_H_START_END));
-	writel(4096,
-	       priv->io_base + _REG(VPP_BLEND_VD2_H_START_END));
+		/* Force all planes off */
+		writel_bits(VPP_OSD1_POSTBLEND | VPP_OSD2_POSTBLEND |
+			    VPP_VD1_POSTBLEND | VPP_VD2_POSTBLEND |
+			    VPP_VD1_PREBLEND | VPP_VD2_PREBLEND, 0,
+			    priv->io_base + _REG(VPP_MISC));
+
+		/* Setup default VD settings */
+		writel(4096,
+		       priv->io_base + _REG(VPP_PREBLEND_VD1_H_START_END));
+		writel(4096,
+		       priv->io_base + _REG(VPP_BLEND_VD2_H_START_END));
+	}
+
+	debug("%s:%d\n", __func__, __LINE__);
 
 	/* Disable Scalers */
 	writel(0, priv->io_base + _REG(VPP_OSD_SC_CTRL0));
@@ -397,11 +461,15 @@ void meson_vpu_init(struct udevice *dev)
 	writel(4 | (4 << 8) | BIT(15),
 	       priv->io_base + _REG(VPP_SC_MISC));
 
+	debug("%s:%d\n", __func__, __LINE__);
+
 	/* Write in the proper filter coefficients. */
 	meson_vpp_write_scaling_filter_coefs(priv,
 				vpp_filter_coefs_4point_bspline, false);
 	meson_vpp_write_scaling_filter_coefs(priv,
 				vpp_filter_coefs_4point_bspline, true);
+
+	debug("%s:%d\n", __func__, __LINE__);
 
 	/* Write the VD proper filter coefficients. */
 	meson_vpp_write_vd_scaling_filter_coefs(priv, vpp_filter_coefs_bicubic,
@@ -409,26 +477,44 @@ void meson_vpu_init(struct udevice *dev)
 	meson_vpp_write_vd_scaling_filter_coefs(priv, vpp_filter_coefs_bicubic,
 						true);
 
+	debug("%s:%d\n", __func__, __LINE__);
+
 	/* Disable OSDs */
 	writel_bits(BIT(0) | BIT(21), 0,
 		    priv->io_base + _REG(VIU_OSD1_CTRL_STAT));
 	writel_bits(BIT(0) | BIT(21), 0,
 		    priv->io_base + _REG(VIU_OSD2_CTRL_STAT));
 
+	debug("%s:%d\n", __func__, __LINE__);
+
 	/* On GXL/GXM, Use the 10bit HDR conversion matrix */
 	if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_GXM) ||
 	    meson_vpu_is_compatible(priv, VPU_COMPATIBLE_GXL))
 		meson_viu_load_matrix(priv);
+	else if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_G12A))
+		meson_viu_set_g12a_osd1_matrix(priv, RGB709_to_YUV709l_coeff,
+					       true);
+
+	debug("%s:%d\n", __func__, __LINE__);
 
 	/* Initialize OSD1 fifo control register */
 	reg = BIT(0) |	/* Urgent DDR request priority */
-	      (4 << 5) | /* hold_fifo_lines */
-	      (3 << 10) | /* burst length 64 */
-	      (32 << 12) | /* fifo_depth_val: 32*8=256 */
-	      (2 << 22) | /* 4 words in 1 burst */
-	      (2 << 24);
+	      (4 << 5); /* hold_fifo_lines */
+	if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_G12A))
+		reg |= (1 << 10) | /* burst length 32 */
+		       (32 << 12) | /* fifo_depth_val: 32*8=256 */
+		       (2 << 22) | /* 4 words in 1 burst */
+		       (2 << 24) |
+		       (1 << 31);
+	else
+		reg |= (3 << 10) | /* burst length 64 */
+		       (32 << 12) | /* fifo_depth_val: 32*8=256 */
+		       (2 << 22) | /* 4 words in 1 burst */
+		       (2 << 24);
 	writel(reg, priv->io_base + _REG(VIU_OSD1_FIFO_CTRL_STAT));
 	writel(reg, priv->io_base + _REG(VIU_OSD2_FIFO_CTRL_STAT));
+
+	debug("%s:%d\n", __func__, __LINE__);
 
 	/* Set OSD alpha replace value */
 	writel_bits(0xff << OSD_REPLACE_SHIFT,
@@ -437,4 +523,40 @@ void meson_vpu_init(struct udevice *dev)
 	writel_bits(0xff << OSD_REPLACE_SHIFT,
 		    0xff << OSD_REPLACE_SHIFT,
 		    priv->io_base + _REG(VIU_OSD2_CTRL_STAT2));
+
+	debug("%s:%d\n", __func__, __LINE__);
+
+	/* Disable VD1 AFBC */
+	/* di_mif0_en=0 mif0_to_vpp_en=0 di_mad_en=0 */
+	writel_bits(0x7 << 16, 0, priv->io_base + _REG(VIU_MISC_CTRL0));
+	/* afbc vd1 set=0 */
+	writel_bits(BIT(20), 0, priv->io_base + _REG(VIU_MISC_CTRL0));
+	writel(0, priv->io_base + _REG(AFBC_ENABLE));
+
+	writel(0x00FF00C0, priv->io_base + _REG(VD1_IF0_LUMA_FIFO_SIZE));
+	writel(0x00FF00C0, priv->io_base + _REG(VD2_IF0_LUMA_FIFO_SIZE));
+
+	if (meson_vpu_is_compatible(priv, VPU_COMPATIBLE_G12A)) {
+		writel(4 << 29 |
+			1 << 27 |
+			1 << 26 | /* blend_din0 input to blend0 */
+			1 << 25 | /* blend1_dout to blend2 */
+			1 << 24 | /* blend1_din3 input to blend1 */
+			1 << 20 |
+			0 << 16 |
+			1,
+			priv->io_base + _REG(VIU_OSD_BLEND_CTRL));
+		writel(1 << 20,
+			priv->io_base + _REG(OSD1_BLEND_SRC_CTRL));
+		writel(1 << 20,
+			priv->io_base + _REG(OSD2_BLEND_SRC_CTRL));
+		writel(0, priv->io_base + _REG(VD1_BLEND_SRC_CTRL));
+		writel(0, priv->io_base + _REG(VD2_BLEND_SRC_CTRL));
+		writel(0, priv->io_base + _REG(VIU_OSD_BLEND_DUMMY_DATA0));
+		writel(0, priv->io_base + _REG(VIU_OSD_BLEND_DUMMY_ALPHA));
+		writel_bits(0x3 << 2, 0x3 << 2,
+			priv->io_base + _REG(DOLBY_PATH_CTRL));
+	}
+
+	debug("%s:%d\n", __func__, __LINE__);
 }
