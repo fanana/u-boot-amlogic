@@ -51,7 +51,7 @@ enum hdmi_compatible {
 	HDMI_COMPATIBLE_GXBB = 0,
 	HDMI_COMPATIBLE_GXL = 1,
 	HDMI_COMPATIBLE_GXM = 2,
-	HDMI_COMPATIBLE_G12A = 2,
+	HDMI_COMPATIBLE_G12A = 3,
 };
 
 static inline bool meson_hdmi_is_compatible(struct meson_dw_hdmi *priv,
