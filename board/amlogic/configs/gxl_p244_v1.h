@@ -108,6 +108,11 @@
         "fb_width=1920\0" \
         "fb_height=1080\0" \
         "frac_rate_policy=1\0" \
+        "sdr2hdr=2\0" \
+        "hdmi_read_edid=1\0" \
+        "hdmichecksum=0x00000000\0" \
+        "dolby_status=0\0" \
+        "dolby_vision_on=0\0" \
         "usb_burning=update 1000\0" \
         "otg_device=1\0"\
         "fdt_high=0x20000000\0"\
@@ -138,7 +143,7 @@
             "else fi;"\
             "\0"\
     "storeargs="\
-            "setenv bootargs ${initargs} ${fs_type} otg_device=${otg_device} reboot_mode_android=${reboot_mode_android} androidboot.selinux=${EnableSelinux} logo=${display_layer},loaded,${fb_addr},${outputmode} maxcpus=${maxcpus} vout=${outputmode},enable hdmimode=${hdmimode} frac_rate_policy=${frac_rate_policy} cvbsmode=${cvbsmode} hdmitx=${cecconfig},${colorattribute} cvbsdrv=${cvbs_drv} androidboot.firstboot=${firstboot} jtag=${jtag}; "\
+            "setenv bootargs ${initargs} otg_device=${otg_device} reboot_mode_android=${reboot_mode_android} logo=${display_layer},loaded,${fb_addr} vout=${outputmode},enable panel_type=${panel_type} hdmitx=${cecconfig},${colorattribute} hdmimode=${hdmimode} hdmichecksum=${hdmichecksum} dolby_vision_on=${dolby_vision_on} frac_rate_policy=${frac_rate_policy} hdmi_read_edid=${hdmi_read_edid} cvbsmode=${cvbsmode} osd_reverse=${osd_reverse} video_reverse=${video_reverse} irq_check_en=${Irq_check_en}  androidboot.selinux=${EnableSelinux} androidboot.firstboot=${firstboot} jtag=${jtag}; "\
 	    "setenv bootargs ${bootargs} androidboot.veritymode=enforcing androidboot.hardware=amlogic;"\
         "setenv bootargs ${bootargs} page_trace=${page_trace};" \
 	    "setenv bootargs ${bootargs} androidboot.rpmb_state=${rpmb_state};"\
@@ -276,7 +281,7 @@
             "else "\
                 "setenv reboot_mode_android ""normal"";"\
                 "run storeargs;"\
-                "osd open;osd clear;imgread pic logo bootup $loadaddr;bmp display $bootup_offset;bmp scale; "\
+                "hdmitx hpd;hdmitx get_preferred_mode;hdmitx get_parse_edid;dovi process;osd open;osd clear;imgread pic logo bootup $loadaddr;bmp display $bootup_offset;bmp scale;vout output ${outputmode};dovi set;dovi pkg;vpp hdrpkt;"\
             "fi;fi;"\
             "\0"\
         "cmdline_keys="\
@@ -450,6 +455,9 @@
 
 /* DISPLAY & HDMITX */
 #define CONFIG_AML_HDMITX20 1
+#if defined(CONFIG_AML_HDMITX20)
+#define CONFIG_AML_DOLBY 1
+#endif
 #define CONFIG_AML_CANVAS 1
 #define CONFIG_AML_VOUT 1
 #define CONFIG_AML_OSD 1

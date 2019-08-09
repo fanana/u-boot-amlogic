@@ -29,6 +29,7 @@
 #include "hdmitx_tvenc.h"
 #include "mach_reg.h"
 #include "hw_enc_clk_config.h"
+#include <amlogic/dolby_vision.h>
 
 const static char *vend_name = "Amlogic"; /* Max 8 bytes */
 const static char *prod_desc = "MBox Meson Ref"; /* Max 16 bytes */
@@ -227,6 +228,8 @@ static void ddc_init(void)
 	static int ddc_init_flag;
 	unsigned int data32 = 0;
 
+	hdmitx_hw_init();
+	_udelay(200);
 
 	if (ddc_init_flag)
 		return;
@@ -269,10 +272,7 @@ static void ddc_init(void)
 static int hdmitx_read_edid(unsigned char *buf, unsigned char addr,
 	unsigned char blk_no)
 {
-	unsigned char test_data[8];
-	hdmitx_hw_init();
 	ddc_init();
-	read_edid_8bytes(test_data, (addr + 0 * 128) & 0xff, 0);
 	return read_edid_8bytes(buf, (addr + blk_no * 128) & 0xff, blk_no);
 }
 
@@ -423,11 +423,23 @@ void hdmi_tx_init(void)
 
 void hdmi_tx_set(struct hdmitx_dev *hdev)
 {
+	unsigned char checksum[11];
+
 	hdmitx_hw_init();
 	hdmitx_debug();
 	ddc_init();
 	hdmitx_set_hw(hdev);
 	hdmitx_debug();
+	//kernel will determine output mode on its own
+	setenv("hdmimode", getenv("outputmode"));
+
+	//null char needed to terminate the string otherwise garbage in checksum logopara
+	memcpy(checksum, hdev->RXCap.checksum, 10);
+	checksum[10] = '\0';
+	setenv("hdmichecksum", (const char*)checksum);
+	printf("hdmi_tx_set: save mode: %s, attr: %s, hdmichecksum: %s\n",
+		getenv("outputmode"), getenv("colorattribute"), getenv("hdmichecksum"));
+	run_command("saveenv", 0);
 	return;
 
 #if 0
@@ -3084,6 +3096,12 @@ static void hdmitx_set_hw(struct hdmitx_dev* hdev)
 		break;
 	}
 	hd_write_reg(P_ENCP_VIDEO_EN, 1); /* enable it finially */
+
+	if (is_dolby_enable()) {
+		hdmitx_set_reg_bits(HDMITX_DWC_FC_INVIDCONF, 0, 3, 1);
+		msleep(1);
+		hdmitx_set_reg_bits(HDMITX_DWC_FC_INVIDCONF, 1, 3, 1);
+	}
 }
 
 // Use this self-made function rather than %, because % appears to produce wrong
