@@ -6,7 +6,7 @@ config SYS_CPU
 
 config SYS_BOARD
 	string
-	default "sm1_ac213_v1"
+	default "sm1_ac214_v1"
 
 config SYS_VENDOR
 	string
@@ -17,6 +17,6 @@ config SYS_SOC
 	default "g12a"
 
 config SYS_CONFIG_NAME
-	default "sm1_ac213_v1"
+	default "sm1_ac214_v1"
 
 endif
