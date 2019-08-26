@@ -14,6 +14,7 @@
 #include <video.h>
 #include <display.h>
 #include <linux/io.h>
+#include <linux/bitfield.h>
 #include "meson_registers.h"
 
 enum {
