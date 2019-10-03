@@ -7,6 +7,8 @@
 #ifndef __MESON64_CONFIG_H
 #define __MESON64_CONFIG_H
 
+#include <linux/sizes.h>
+
 /* Generic Interrupt Controller Definitions */
 #if (defined(CONFIG_MESON_AXG) || defined(CONFIG_MESON_G12A))
 #define GICD_BASE			0xffc01000
@@ -36,7 +38,7 @@
 #define CONFIG_CPU_ARMV8
 #define CONFIG_REMAKE_ELF
 #define CONFIG_SYS_MAXARGS		32
-#define CONFIG_SYS_MALLOC_LEN		(32 << 20)
+#define CONFIG_SYS_MALLOC_LEN		SZ_128M
 #define CONFIG_SYS_CBSIZE		1024
 
 #define CONFIG_SYS_SDRAM_BASE		0

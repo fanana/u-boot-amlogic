@@ -9,55 +9,83 @@
 #ifndef __MESON64_ANDROID_CONFIG_H
 #define __MESON64_ANDROID_CONFIG_H
 
+#define CONFIG_SYS_MMC_ENV_DEV	2
+#define CONFIG_SYS_MMC_ENV_PART	1
 
-#define BOOTENV_DEV_FASTBOOT(devtypeu, devtypel, instance) \
+#ifndef CONTROL_PARTITION
+#define CONTROL_PARTITION "misc"
+#endif
+
+#ifndef BOOT_PARTITION
+#define BOOT_PARTITION "boot"
+#endif
+
+#if defined(CONFIG_CMD_AVB)
+#define AVB_VERIFY_CHECK "if test \"${force_avb}\" -eq 1; then " \
+				"if run avb_verify; then " \
+					"echo AVB verification OK.;" \
+					"setenv bootargs \"$bootargs $avb_bootargs\";" \
+				"else " \
+					"echo AVB verification failed.;" \
+				"exit; fi;" \
+			"else " \
+				"echo Running without AVB...; "\
+			"fi;"
+
+#define AVB_VERIFY_CMD "avb_verify=avb init ${mmcdev}; avb verify;\0"
+#else
+#define AVB_VERIFY_CHECK ""
+#define AVB_VERIFY_CMD ""
+#endif
+
+ #define BOOTENV_DEV_FASTBOOT(devtypeu, devtypel, instance) \
 	"bootcmd_fastboot=" \
-		"sm reboot_reason reason;" \
 		"setenv run_fastboot 0;" \
-		"if test \"${boot_source}\" = \"usb\"; then " \
-			"echo Fastboot forced by usb rom boot;" \
-			"setenv run_fastboot 1;" \
-		"fi;" \
-		"if gpt verify mmc ${mmcdev} ${partitions}; then; " \
-		"else " \
-			"echo Broken MMC partition scheme;" \
-			"setenv run_fastboot 1;" \
-		"fi;" \
+		"sm reboot_reason reason;" \
 		"if test \"${reason}\" = \"bootloader\" -o " \
 			"\"${reason}\" = \"fastboot\"; then " \
 			"echo Fastboot asked by reboot reason;" \
 			"setenv run_fastboot 1;" \
 		"fi;" \
-		"if test \"${skip_fastboot}\" -eq 1; then " \
-			"echo Fastboot skipped by environment;" \
-			"setenv run_fastboot 0;" \
-		"fi;" \
-		"if test \"${force_fastboot}\" -eq 1; then " \
-			"echo Fastboot forced by environment;" \
-			"setenv run_fastboot 1;" \
+		"if bcb load " __stringify(CONFIG_FASTBOOT_FLASH_MMC_DEV) " " \
+		CONTROL_PARTITION "; then " \
+			"if bcb test command = bootonce-bootloader; then " \
+				"echo BCB: Bootloader boot...; " \
+				"bcb clear command; bcb store; " \
+				"setenv run_fastboot 1;" \
+			"fi; " \
+		"else " \
+			"echo Warning: BCB is corrupted or does not exist; " \
 		"fi;" \
 		"if test \"${run_fastboot}\" -eq 1; then " \
-			"echo Running Fastboot...;" \
-			"fastboot 0;" \
-		"fi\0"
+			"fastboot " __stringify(CONFIG_FASTBOOT_USB_DEV) "; " \
+		"fi;\0"
 
 #define BOOTENV_DEV_NAME_FASTBOOT(devtypeu, devtypel, instance)	\
 		"fastboot "
 
-/* TOFIX: Run actual recovery instead of fastboot */
 #define BOOTENV_DEV_RECOVERY(devtypeu, devtypel, instance) \
 	"bootcmd_recovery=" \
 		"pinmux dev pinctrl@14;" \
 		"pinmux dev pinctrl@40;" \
-		"sm reboot_reason reason;" \
 		"setenv run_recovery 0;" \
+		"sm reboot_reason reason;" \
 		"if run check_button; then " \
 			"echo Recovery button is pressed;" \
 			"setenv run_recovery 1;" \
-		"elif test \"${reason}\" = \"recovery\" -o " \
-			  "\"${reason}\" = \"update\"; then " \
-			"echo Recovery asked by reboot reason;" \
-			"setenv run_recovery 1;" \
+		"fi; " \
+		"if bcb load " __stringify(CONFIG_FASTBOOT_FLASH_MMC_DEV) " " \
+		CONTROL_PARTITION "; then " \
+			"if bcb test command = boot-recovery; then " \
+				"echo BCB: Recovery boot...; " \
+				"setenv run_recovery 1;" \
+			"fi;" \
+		"else " \
+			"if test \"${reason}\" = \"bootloader\" -o " \
+				"\"${reason}\" = \"recovery\"; then " \
+				"echo Recovery asked by reboot reason;" \
+				"setenv run_recovery 1;" \
+			"fi;" \
 		"fi;" \
 		"if test \"${skip_recovery}\" -eq 1; then " \
 			"echo Recovery skipped by environment;" \
@@ -69,19 +97,30 @@
 		"fi;" \
 		"if test \"${run_recovery}\" -eq 1; then " \
 			"echo Running Recovery...;" \
-			"fastboot 0;" \
-		"fi\0"
+			"mmc dev ${mmcdev};" \
+			"setenv bootargs \"${bootargs} androidboot.serialno=${serial#}\";" \
+			"part start mmc ${mmcdev} recovery boot_start;" \
+			"part size mmc ${mmcdev} recovery boot_size;" \
+			AVB_VERIFY_CHECK \
+			"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
+				"echo Running Android Recovery...;" \
+				"bootm ${loadaddr};" \
+			"fi;" \
+			"echo Failed to boot Android...;" \
+			"reset;" \
+		"fi;\0"
 
 #define BOOTENV_DEV_NAME_RECOVERY(devtypeu, devtypel, instance)	\
 		"recovery "
 
 #define BOOTENV_DEV_SYSTEM(devtypeu, devtypel, instance) \
 	"bootcmd_system=" \
-		"echo Loading Android boot partition...;" \
+		"echo Loading Android " BOOT_PARTITION " partition...;" \
 		"mmc dev ${mmcdev};" \
-		"setenv bootargs ${bootargs} console=${console} androidboot.serialno=${serial#};" \
-		"part start mmc ${mmcdev} ${bootpart} boot_start;" \
-		"part size mmc ${mmcdev} ${bootpart} boot_size;" \
+		"setenv bootargs \"${bootargs} androidboot.serialno=${serial#}\";" \
+		"part start mmc ${mmcdev} " BOOT_PARTITION " boot_start;" \
+		"part size mmc ${mmcdev} " BOOT_PARTITION " boot_size;" \
+		AVB_VERIFY_CHECK \
 		"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
 			"echo Running Android...;" \
 			"bootm ${loadaddr};" \
@@ -110,14 +149,14 @@
 
 #define CONFIG_EXTRA_ENV_SETTINGS                                     \
 	"partitions=" PARTS_DEFAULT "\0"                              \
+	AVB_VERIFY_CMD                                                \
 	"mmcdev=2\0"                                                  \
-	"bootpart=1\0"                                                \
-	"logopart=2\0"                                                \
+	"logopart=1\0"                                                \
+	"force_avb=0\0"                                               \
 	"gpio_recovery=88\0"                                          \
 	"check_button=gpio input ${gpio_recovery};test $? -eq 0;\0"   \
 	"load_logo=" PREBOOT_LOAD_LOGO "\0"			      \
-	"console=/dev/ttyAML0\0"                                      \
-	"bootargs=no_console_suspend\0"                               \
+	"console=ttyAML0\0"                                      \
 	"stdin=" STDIN_CFG "\0"                                       \
 	"stdout=" STDOUT_CFG "\0"                                     \
 	"stderr=" STDOUT_CFG "\0"                                     \
