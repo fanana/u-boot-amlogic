@@ -131,7 +131,7 @@
             "else fi;"\
             "\0"\
     "storeargs="\
-            "setenv bootargs ${initargs} otg_device=${otg_device} reboot_mode_android=${reboot_mode_android} androidboot.selinux=${EnableSelinux} logo=${display_layer},loaded,${fb_addr},${outputmode} maxcpus=${maxcpus} vout=${outputmode},enabletx=${cecconfig},${colorattribute}  hdmimode=${hdmimode} cvbsmode=${cvbsmode} hdmitx=${cecconfig} cvbsdrv=${cvbs_drv} pq=${pq} androidboot.firstboot=${firstboot} jtag=${jtag}; "\
+            "setenv bootargs ${initargs} otg_device=${otg_device} reboot_mode_android=${reboot_mode_android} androidboot.selinux=${EnableSelinux} logo=${display_layer},loaded,${fb_addr},${outputmode} maxcpus=${maxcpus} vout=${outputmode},enable hdmitx=${cecconfig},${colorattribute}  hdmimode=${hdmimode} cvbsmode=${cvbsmode} hdmitx=${cecconfig} cvbsdrv=${cvbs_drv} pq=${pq} androidboot.firstboot=${firstboot} jtag=${jtag}; "\
 	"setenv bootargs ${bootargs} androidboot.hardware=amlogic;"\
             "run cmdline_keys;"\
             "\0"\
