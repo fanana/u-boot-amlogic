@@ -53,6 +53,7 @@
 					"echo AVB verification failed.;" \
 				"exit; fi;" \
 			"else " \
+				"setenv bootargs \"$bootargs androidboot.verifiedbootstate=orange\";" \
 				"echo Running without AVB...; "\
 			"fi;"
 
@@ -60,9 +61,46 @@
 #else
 #define AVB_VERIFY_CHECK ""
 #define AVB_VERIFY_CMD ""
+
 #endif
 
- #define BOOTENV_DEV_FASTBOOT(devtypeu, devtypel, instance) \
+#if defined(CONFIG_CMD_AB_SELECT)
+#define ANDROIDBOOT_GET_CURRENT_SLOT_CMD "get_current_slot=" \
+	"if part number mmc ${mmcdev} " CONTROL_PARTITION " control_part_number; " \
+	"then " \
+		"echo " CONTROL_PARTITION \
+			" partition number:${control_part_number};" \
+		"ab_select current_slot mmc ${mmcdev}:${control_part_number};" \
+	"else " \
+		"echo " CONTROL_PARTITION " partition not found;" \
+	"fi;\0"
+
+#define AB_SELECT_SLOT \
+	"run get_current_slot; " \
+	"if test -e \"${current_slot}\"; " \
+	"then " \
+		"setenv slot_suffix _${current_slot}; " \
+	"else " \
+		"echo current_slot not found;" \
+		"exit;" \
+	"fi;"
+
+#define AB_SELECT_ARGS \
+	"setenv bootargs_ab androidboot.slot_suffix=${slot_suffix}; " \
+	"echo A/B cmdline addition: ${bootargs_ab};" \
+	"setenv bootargs ${bootargs} ${bootargs_ab};"
+
+#define AB_BOOTARGS " androidboot.force_normal_boot=1"
+#define RECOVERY_PARTITION "boot"
+#else
+#define AB_SELECT_SLOT " "
+#define AB_SELECT_ARGS " "
+#define ANDROIDBOOT_GET_CURRENT_SLOT_CMD ""
+#define AB_BOOTARGS " "
+#define RECOVERY_PARTITION "recovery"
+#endif
+
+#define BOOTENV_DEV_FASTBOOT(devtypeu, devtypel, instance) \
 	"bootcmd_fastboot=" \
 		"setenv run_fastboot 0;" \
 		"sm reboot_reason reason;" \
@@ -140,10 +178,12 @@
 		"if test \"${run_recovery}\" -eq 1; then " \
 			"echo Running Recovery...;" \
 			"mmc dev ${mmcdev};" \
-			"setenv bootargs \"${bootargs} androidboot.serialno=${serial#}\";" \
-			"part start mmc ${mmcdev} recovery boot_start;" \
-			"part size mmc ${mmcdev} recovery boot_size;" \
+			"setenv bootargs  \"${bootargs} androidboot.serialno=${serial#}\" ;" \
+			AB_SELECT_SLOT \
 			AVB_VERIFY_CHECK \
+			AB_SELECT_ARGS \
+			"part start mmc ${mmcdev} " RECOVERY_PARTITION "${slot_suffix} boot_start;" \
+			"part size mmc ${mmcdev} " RECOVERY_PARTITION "${slot_suffix} boot_size;" \
 			"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
 				"echo Running Android Recovery...;" \
 				"bootm ${loadaddr};" \
@@ -159,11 +199,13 @@
 	"bootcmd_system=" \
 		"echo Loading Android " BOOT_PARTITION " partition...;" \
 		"mmc dev ${mmcdev};" \
-		"setenv bootargs \"${bootargs} androidboot.serialno=${serial#}\";" \
-		"part start mmc ${mmcdev} " BOOT_PARTITION " boot_start;" \
-		"part size mmc ${mmcdev} " BOOT_PARTITION " boot_size;" \
+		AB_SELECT_SLOT \
 		AVB_VERIFY_CHECK \
+		AB_SELECT_ARGS \
+		"part start mmc ${mmcdev} " BOOT_PARTITION "${slot_suffix} boot_start;" \
+		"part size mmc ${mmcdev} " BOOT_PARTITION "${slot_suffix} boot_size;" \
 		"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
+			"setenv bootargs \"${bootargs} " AB_BOOTARGS " androidboot.serialno=${serial#}\"  ; " \
 			"echo Running Android...;" \
 			"bootm ${loadaddr};" \
 		"fi;" \
@@ -194,6 +236,7 @@
 	AVB_VERIFY_CMD                                                \
 	ANDROIDBOOT_FASTBOOTD_CMD                                     \
 	ANDROIDBOOT_RECOVERY_CMD                                      \
+	ANDROIDBOOT_GET_CURRENT_SLOT_CMD                              \
 	"mmcdev=2\0"                                                  \
 	"logopart=1\0"                                                \
 	"force_avb=0\0"                                               \
