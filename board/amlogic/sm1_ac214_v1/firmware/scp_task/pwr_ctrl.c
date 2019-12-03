@@ -107,6 +107,17 @@ void get_wakeup_source(void *response, unsigned int suspend_from)
 	p->sources = val;
 	p->gpio_info_count = i;
 
+	/* Power Key: AO_GPIO[3]*/
+	gpio = &(p->gpio_info[i]);
+	gpio->wakeup_id = POWER_KEY_WAKEUP_SRC;
+	gpio->gpio_in_idx = GPIOAO_3;
+	gpio->gpio_in_ao = 1;
+	gpio->gpio_out_idx = -1;
+	gpio->gpio_out_ao = -1;
+	gpio->irq = IRQ_AO_GPIO0_NUM;
+	gpio->trig_type = GPIO_IRQ_FALLING_EDGE;
+	p->gpio_info_count = ++i;
+
 /*bt wake host*/
 	gpio = &(p->gpio_info[i]);
 	gpio->wakeup_id = BT_WAKEUP_SRC;
@@ -149,6 +160,12 @@ static unsigned int detect_key(unsigned int suspend_from)
 		if (irq[IRQ_VRTC] == IRQ_VRTC_NUM) {
 			irq[IRQ_VRTC] = 0xFFFFFFFF;
 			exit_reason = RTC_WAKEUP;
+		}
+
+		if (irq[IRQ_AO_GPIO0] == IRQ_AO_GPIO0_NUM) {
+			irq[IRQ_AO_GPIO0] = 0xFFFFFFFF;
+			if ((readl(AO_GPIO_I) & (1<<3)) == 0)
+				exit_reason = POWER_KEY_WAKEUP;
 		}
 
 		if (irq[IRQ_GPIO1] == IRQ_GPIO1_NUM) {
