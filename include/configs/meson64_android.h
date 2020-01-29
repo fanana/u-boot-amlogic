@@ -57,7 +57,7 @@
 				"echo Running without AVB...; "\
 			"fi;"
 
-#define AVB_VERIFY_CMD "avb_verify=avb init ${mmcdev}; avb verify;\0"
+#define AVB_VERIFY_CMD "avb_verify=avb init ${mmcdev}; avb verify $slot_suffix;\0"
 #else
 #define AVB_VERIFY_CHECK ""
 #define AVB_VERIFY_CMD ""
@@ -93,11 +93,53 @@
 #define AB_BOOTARGS " androidboot.force_normal_boot=1"
 #define RECOVERY_PARTITION "boot"
 #else
-#define AB_SELECT_SLOT " "
+#define AB_SELECT_SLOT ""
 #define AB_SELECT_ARGS " "
 #define ANDROIDBOOT_GET_CURRENT_SLOT_CMD ""
 #define AB_BOOTARGS " "
 #define RECOVERY_PARTITION "recovery"
+#endif
+
+#if defined(CONFIG_CMD_ABOOTIMG)
+
+/*
+ * Prepares complete device tree blob for current board (for Android boot).
+ *
+ * Boot image or recovery image should be loaded into $loadaddr prior to running
+ * these commands. The logic of these commnads is next:
+ *
+ *   1. Read correct DTB for current SoC/board from boot image in $loadaddr
+ *      to $fdtaddr
+ *   2. Merge all needed DTBO for current board from 'dtbo' partition into read
+ *      DTB
+ *   3. User should provide $fdtaddr as 3rd argument to 'bootm'
+ */
+#define PREPARE_FDT \
+	"echo Preparing FDT...; " \
+	"if test $board_name = sei610; then " \
+		"echo \"  Reading DTBO partition for sei610...\"; " \
+		"setenv dtbo_index 0;" \
+	"elif test $board_name = vim3l; then " \
+		"echo \"  Reading DTBO partition for sei610...\"; " \
+		"setenv dtbo_index 1;" \
+	"else " \
+		"echo Error: Android boot is not supported for $board_name; " \
+		"exit; " \
+	"fi; " \
+	"part start mmc ${mmcdev} dtbo${slot_suffix} p_dtbo_start; " \
+	"part size mmc ${mmcdev} dtbo${slot_suffix} p_dtbo_size; " \
+	"mmc read ${dtboaddr} ${p_dtbo_start} ${p_dtbo_size}; " \
+	"echo \"  Reading DTB for Amlogic SM1 ...\"; " \
+	"abootimg get dtb --index=0 dtb_start dtb_size; " \
+	"cp.b $dtb_start $fdt_addr_r $dtb_size; " \
+	"fdt addr $fdt_addr_r 0x80000; " \
+	"echo \"  Applying DTBOs...\"; " \
+	"adtimg addr $dtboaddr; " \
+	"adtimg get dt --index=$dtbo_index dtbo0_addr; " \
+	"fdt apply $dtbo0_addr;" \
+
+#else
+#define PREPARE_FDT " "
 #endif
 
 #define BOOTENV_DEV_FASTBOOT(devtypeu, devtypel, instance) \
@@ -178,15 +220,16 @@
 		"if test \"${run_recovery}\" -eq 1; then " \
 			"echo Running Recovery...;" \
 			"mmc dev ${mmcdev};" \
-			"setenv bootargs  \"${bootargs} androidboot.serialno=${serial#}\" ;" \
 			AB_SELECT_SLOT \
 			AVB_VERIFY_CHECK \
 			AB_SELECT_ARGS \
 			"part start mmc ${mmcdev} " RECOVERY_PARTITION "${slot_suffix} boot_start;" \
 			"part size mmc ${mmcdev} " RECOVERY_PARTITION "${slot_suffix} boot_size;" \
 			"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
+				PREPARE_FDT \
 				"echo Running Android Recovery...;" \
-				"bootm ${loadaddr};" \
+				"setenv bootargs \"${bootargs} " AB_BOOTARGS " androidboot.serialno=${serial#}\"  ; " \
+				"bootm ${loadaddr} ${loadaddr} ${fdt_addr_r};" \
 			"fi;" \
 			"echo Failed to boot Android...;" \
 			"reset;" \
@@ -205,12 +248,15 @@
 		"part start mmc ${mmcdev} " BOOT_PARTITION "${slot_suffix} boot_start;" \
 		"part size mmc ${mmcdev} " BOOT_PARTITION "${slot_suffix} boot_size;" \
 		"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
+			PREPARE_FDT \
 			"setenv bootargs \"${bootargs} " AB_BOOTARGS " androidboot.serialno=${serial#}\"  ; " \
 			"echo Running Android...;" \
-			"bootm ${loadaddr};" \
+			"bootm ${loadaddr} ${loadaddr} ${fdt_addr_r};" \
 		"fi;" \
 		"echo Failed to boot Android...;" \
 		"reset\0"
+
+
 
 #define BOOTENV_DEV_NAME_SYSTEM(devtypeu, devtypel, instance)	\
 		"system "
@@ -247,7 +293,8 @@
 	"stdin=" STDIN_CFG "\0"                                       \
 	"stdout=" STDOUT_CFG "\0"                                     \
 	"stderr=" STDOUT_CFG "\0"                                     \
-	"loadaddr=0x01000000\0"                                       \
+	"dtboaddr=0x08200000\0"                                       \
+	"loadaddr=0x01080000\0"                                       \
 	"fdt_addr_r=0x01000000\0"                                     \
 	"scriptaddr=0x08000000\0"                                     \
 	"kernel_addr_r=0x01080000\0"                                  \
