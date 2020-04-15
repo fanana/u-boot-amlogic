@@ -21,8 +21,8 @@
 	"name=vbmeta_b,size=512K,uuid=${uuid_gpt_vbmeta_b};" \
 	"name=boot_a,size=32M,bootable,uuid=${uuid_gpt_boot_a};" \
 	"name=boot_b,size=32M,bootable,uuid=${uuid_gpt_boot_b};" \
-	"name=super,size=3072M,uuid=${uuid_gpt_super};"	\
-	"name=userdata,size=11298M,uuid=${uuid_gpt_userdata};" \
+	"name=super,size=4608M,uuid=${uuid_gpt_super};"	\
+	"name=userdata,size=10233M,uuid=${uuid_gpt_userdata};" \
 	"name=rootfs,size=-,uuid=" ROOT_UUID
 
 #else
@@ -34,8 +34,8 @@
 	"name=boot,size=32M,bootable,uuid=${uuid_gpt_boot};" \
 	"name=recovery,size=32M,uuid=${uuid_gpt_recovery};"	\
 	"name=cache,size=256M,uuid=${uuid_gpt_cache};"	\
-	"name=super,size=1792M,uuid=${uuid_gpt_super};"	\
-	"name=userdata,size=12794M,uuid=${uuid_gpt_userdata};" \
+	"name=super,size=2304M,uuid=${uuid_gpt_super};"	\
+	"name=userdata,size=12282M,uuid=${uuid_gpt_userdata};" \
 	"name=rootfs,size=-,uuid=" ROOT_UUID
 #endif
 
