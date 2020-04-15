@@ -21,9 +21,9 @@
 	"name=boot,size=64M,bootable,uuid=${uuid_gpt_boot};" \
 	"name=logo,size=2M,uuid=" LOGO_UUID             \
 	"name=cache,size=256M,uuid=" CACHE_UUID             \
-	"name=system,size=1536M,uuid=" SYSTEM_UUID           \
+	"name=system,size=2048M,uuid=" SYSTEM_UUID           \
 	"name=vendor,size=256M,uuid=" VENDOR_UUID            \
-	"name=userdata,size=12795M,uuid=" USERDATA_UUID	\
+	"name=userdata,size=12283M,uuid=" USERDATA_UUID	\
 	"name=rootfs,size=-,uuid=" ROOT_UUID
 
 #include <configs/meson64_android.h>
