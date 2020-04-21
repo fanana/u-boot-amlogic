@@ -24,6 +24,8 @@
 #if CONFIG_IS_ENABLED(FASTBOOT)
 #include <asm/psci.h>
 #include <fastboot.h>
+#include <linux/usb/gadget.h>
+
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -172,6 +174,8 @@ void reset_cpu(ulong addr)
 
 	regs.regs[0] = ARM_PSCI_0_2_FN_SYSTEM_RESET;
 	regs.regs[1] = reboot_reason;
+
+	usb_gadget_release(0);
 
 	printf("Rebooting with reason: 0x%lx\n", regs.regs[1]);
 
