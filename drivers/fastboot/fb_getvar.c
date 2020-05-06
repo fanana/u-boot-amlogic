@@ -115,7 +115,7 @@ static int getvar_get_part_info(const char *part_name, char *response,
 
 	r = fastboot_nand_get_part_info(part_name, &part_info, response);
 	if (r >= 0 && size)
-		*size = part_info->size;
+		*size = part_info->size * part_info.blksz;
 # else
 	fastboot_fail("this storage is not supported in bootloader", response);
 	r = -ENODEV;
