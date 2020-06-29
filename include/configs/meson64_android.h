@@ -20,6 +20,10 @@
 #define BOOT_PARTITION "boot"
 #endif
 
+#ifndef EXTRA_ANDROID_ENV_SETTINGS
+#define EXTRA_ANDROID_ENV_SETTINGS ""
+#endif
+
 #if defined(CONFIG_CMD_BCB)
 #define ANDROIDBOOT_FASTBOOTD_CMD "androidboot_fastbootd=" \
 	"if bcb load " __stringify(CONFIG_FASTBOOT_FLASH_MMC_DEV) " " \
@@ -101,7 +105,6 @@
 #endif
 
 #if defined(CONFIG_CMD_ABOOTIMG)
-
 /*
  * Prepares complete device tree blob for current board (for Android boot).
  *
@@ -116,12 +119,31 @@
  */
 #define PREPARE_FDT \
 	"echo Preparing FDT...; " \
-	"if test $board_name = sei610; then " \
-		"echo \"  Reading DTBO partition for sei610...\"; " \
-		"setenv dtbo_index 0;" \
+	"if test $board_name = sei510; then " \
+		"echo \"  Reading DTB for sei510...\"; " \
+		"setenv dtb_index 0;" \
+	"elif test $board_name = sei610; then " \
+		"echo \"  Reading DTB for sei610...\"; " \
+		"setenv dtb_index 1;" \
 	"elif test $board_name = vim3l; then " \
-		"echo \"  Reading DTBO partition for sei610...\"; " \
+		"echo \"  Reading DTB for vim3l...\"; " \
+		"setenv dtb_index 2;" \
+	"else " \
+		"echo Error: Android boot is not supported for $board_name; " \
+		"exit; " \
+	"fi; " \
+	"abootimg get dtb --index=$dtb_index dtb_start dtb_size; " \
+	"cp.b $dtb_start $fdt_addr_r $dtb_size; " \
+	"fdt addr $fdt_addr_r  0x80000; " \
+	"if test $board_name = sei510; then " \
+		"echo \"  Reading DTBO for sei510...\"; " \
+		"setenv dtbo_index 0;" \
+	"elif test $board_name = sei610; then " \
+		"echo \"  Reading DTBO for sei610...\"; " \
 		"setenv dtbo_index 1;" \
+	"elif test $board_name = vim3l; then " \
+		"echo \"  Reading DTBO for vim3l...\"; " \
+		"setenv dtbo_index 2;" \
 	"else " \
 		"echo Error: Android boot is not supported for $board_name; " \
 		"exit; " \
@@ -129,17 +151,17 @@
 	"part start mmc ${mmcdev} dtbo${slot_suffix} p_dtbo_start; " \
 	"part size mmc ${mmcdev} dtbo${slot_suffix} p_dtbo_size; " \
 	"mmc read ${dtboaddr} ${p_dtbo_start} ${p_dtbo_size}; " \
-	"echo \"  Reading DTB for Amlogic SM1 ...\"; " \
-	"abootimg get dtb --index=0 dtb_start dtb_size; " \
-	"cp.b $dtb_start $fdt_addr_r $dtb_size; " \
-	"fdt addr $fdt_addr_r 0x80000; " \
 	"echo \"  Applying DTBOs...\"; " \
 	"adtimg addr $dtboaddr; " \
 	"adtimg get dt --index=$dtbo_index dtbo0_addr; " \
 	"fdt apply $dtbo0_addr;" \
+	"setenv bootargs \"$bootargs androidboot.dtbo_idx=$dtbo_index \";"\
+
+#define BOOT_CMD "bootm ${loadaddr} ${loadaddr} ${fdt_addr_r};"
 
 #else
 #define PREPARE_FDT " "
+#define BOOT_CMD "bootm ${loadaddr};"
 #endif
 
 #define BOOTENV_DEV_FASTBOOT(devtypeu, devtypel, instance) \
@@ -228,8 +250,8 @@
 			"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
 				PREPARE_FDT \
 				"echo Running Android Recovery...;" \
-				"setenv bootargs \"${bootargs} " AB_BOOTARGS " androidboot.serialno=${serial#}\"  ; " \
-				"bootm ${loadaddr} ${loadaddr} ${fdt_addr_r};" \
+				"setenv bootargs \"${bootargs} " AB_BOOTARGS " androidboot.serialno=${serial#} \" ; " \
+				BOOT_CMD \
 			"fi;" \
 			"echo Failed to boot Android...;" \
 			"reset;" \
@@ -249,9 +271,9 @@
 		"part size mmc ${mmcdev} " BOOT_PARTITION "${slot_suffix} boot_size;" \
 		"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
 			PREPARE_FDT \
-			"setenv bootargs \"${bootargs} " AB_BOOTARGS " androidboot.serialno=${serial#}\"  ; " \
+			"setenv bootargs \"${bootargs} " AB_BOOTARGS " androidboot.serialno=${serial#} \"  ; " \
 			"echo Running Android...;" \
-			"bootm ${loadaddr} ${loadaddr} ${fdt_addr_r};" \
+			BOOT_CMD \
 		"fi;" \
 		"echo Failed to boot Android...;" \
 		"reset\0"
@@ -278,6 +300,7 @@
 	"fi;"
 
 #define CONFIG_EXTRA_ENV_SETTINGS                                     \
+	EXTRA_ANDROID_ENV_SETTINGS                             \
 	"partitions=" PARTS_DEFAULT "\0"                              \
 	AVB_VERIFY_CMD                                                \
 	ANDROIDBOOT_FASTBOOTD_CMD                                     \
