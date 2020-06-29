@@ -42,6 +42,10 @@
 	"name=rootfs,size=-,uuid=" ROOT_UUID
 #endif
 
+#define EXTRA_ANDROID_ENV_SETTINGS \
+	"board=vim3l\0" \
+	"board_name=vim3l\0" \
+
 #include <configs/meson64_android.h>
 
 #endif /* __CONFIG_H */
