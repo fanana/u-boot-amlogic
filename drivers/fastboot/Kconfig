@@ -171,7 +171,7 @@ config FASTBOOT_CMD_OEM_FORMAT
 
 config FASTBOOT_USE_BCB_SET_REBOOT_FLAG
 	bool "Use BCB by fastboot to set boot reason"
-	depends on CMD_BCB && !ARCH_MESON && !ARCH_ROCKCHIP && !TARGET_KC1 && \
+	depends on CMD_BCB && !ARCH_ROCKCHIP && !TARGET_KC1 && \
 	  !TARGET_SNIPER && !TARGET_AM57XX_EVM && !TARGET_DRA7XX_EVM
 	default y
 	help
