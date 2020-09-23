@@ -9,9 +9,6 @@
 #ifndef __MESON64_ANDROID_CONFIG_H
 #define __MESON64_ANDROID_CONFIG_H
 
-#define CONFIG_SYS_MMC_ENV_DEV	2
-#define CONFIG_SYS_MMC_ENV_PART	1
-
 #ifndef CONTROL_PARTITION
 #define CONTROL_PARTITION "misc"
 #endif
@@ -128,6 +125,9 @@
 	"elif test $board_name = vim3l; then " \
 		"echo \"  Reading DTB for vim3l...\"; " \
 		"setenv dtb_index 2;" \
+	"elif test $board_name = vim3; then " \
+		"echo \"  Reading DTB for vim3...\"; " \
+		"setenv dtb_index 3;" \
 	"else " \
 		"echo Error: Android boot is not supported for $board_name; " \
 		"exit; " \
@@ -144,6 +144,9 @@
 	"elif test $board_name = vim3l; then " \
 		"echo \"  Reading DTBO for vim3l...\"; " \
 		"setenv dtbo_index 2;" \
+	"elif test $board_name = vim3; then " \
+		"echo \"  Reading DTBO for vim3...\"; " \
+		"setenv dtbo_index 3;" \
 	"else " \
 		"echo Error: Android boot is not supported for $board_name; " \
 		"exit; " \
