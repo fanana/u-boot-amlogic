@@ -175,34 +175,42 @@
 			"echo Fastboot forced by usb rom boot;" \
 			"setenv run_fastboot 1;" \
 		"fi;" \
-		"if gpt verify mmc ${mmcdev} ${partitions}; then; " \
-		"else " \
-			"echo Broken MMC partition scheme;" \
-			"setenv run_fastboot 1;" \
-		"fi;" \
-		"if test \"${reason}\" = fastboot; then " \
-			"echo Fastboot userspace asked by reboot reason;" \
-			"setenv force_recovery 1;" \
-			"if run androidboot_fastbootd; then " \
-				"echo BCB set OK.;" \
+		"if test \"${run_fastboot}\" -eq 0; then "\
+			"if gpt verify mmc ${mmcdev} ${partitions}; then; " \
 			"else " \
-				"echo BCB set failed.;" \
-			"exit; fi;" \
-			"run bootcmd_recovery;" \
-		"fi;" \
-		"if test \"${reason}\" = bootloader; then " \
-			"echo Fastboot asked by reboot reason;" \
-			"setenv run_fastboot 1;" \
-		"fi;" \
-		"if bcb load " __stringify(CONFIG_FASTBOOT_FLASH_MMC_DEV) " " \
-		CONTROL_PARTITION "; then " \
-			"if bcb test command = bootonce-bootloader; then " \
-				"echo BCB: Bootloader boot...; " \
-				"bcb clear command; bcb store; " \
+				"echo Broken MMC partition scheme;" \
 				"setenv run_fastboot 1;" \
-			"fi; " \
-		"else " \
-			"echo Warning: BCB is corrupted or does not exist; " \
+			"fi;" \
+		"fi;" \
+		"if test \"${run_fastboot}\" -eq 0; then "\
+			"if test \"${reason}\" = fastboot; then " \
+				"echo Fastboot userspace asked by reboot reason;" \
+				"setenv force_recovery 1;" \
+				"if run androidboot_fastbootd; then " \
+					"echo BCB set OK.;" \
+				"else " \
+					"echo BCB set failed.;" \
+				"exit; fi;" \
+				"run bootcmd_recovery;" \
+			"fi;" \
+		"fi;" \
+		"if test \"${run_fastboot}\" -eq 0; then "\
+			"if test \"${reason}\" = bootloader; then " \
+				"echo Fastboot asked by reboot reason;" \
+				"setenv run_fastboot 1;" \
+			"fi;" \
+		"fi;" \
+		"if test \"${run_fastboot}\" -eq 0; then "\
+			"if bcb load " __stringify(CONFIG_FASTBOOT_FLASH_MMC_DEV) " " \
+			CONTROL_PARTITION "; then " \
+				"if bcb test command = bootonce-bootloader; then " \
+					"echo BCB: Bootloader boot...; " \
+					"bcb clear command; bcb store; " \
+					"setenv run_fastboot 1;" \
+				"fi; " \
+			"else " \
+				"echo Warning: BCB is corrupted or does not exist; " \
+			"fi;" \
 		"fi;" \
 		"if test \"${run_fastboot}\" -eq 1; then " \
 			"fastboot " __stringify(CONFIG_FASTBOOT_USB_DEV) "; " \
