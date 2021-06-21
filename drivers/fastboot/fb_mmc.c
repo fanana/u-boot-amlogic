@@ -241,7 +241,7 @@ static void fb_mmc_boot_ops(struct blk_desc *dev_desc, void *buffer,
 	if (blk_dselect_hwpart(dev_desc, hwpart)) {
 		pr_err("Failed to select hwpart\n");
 		fastboot_fail("Failed to select hwpart", response);
-		return;
+		goto out;
 	}
 
 	if (buffer) { /* flash */
@@ -254,7 +254,7 @@ static void fb_mmc_boot_ops(struct blk_desc *dev_desc, void *buffer,
 		if (blkcnt > (dev_desc->lba - offset)) {
 			pr_err("Image size too large\n");
 			fastboot_fail("Image size too large", response);
-			return;
+			goto out;
 		}
 
 		debug("Start Flashing Image to EMMC_BOOT%d...\n", hwpart);
@@ -265,7 +265,7 @@ static void fb_mmc_boot_ops(struct blk_desc *dev_desc, void *buffer,
 			pr_err("Failed to write EMMC_BOOT%d\n", hwpart);
 			fastboot_fail("Failed to write EMMC_BOOT part",
 				      response);
-			return;
+			goto out;
 		}
 
 		printf("........ wrote %lu bytes to EMMC_BOOT%d at offset " LBAFU "\n",
@@ -275,11 +275,16 @@ static void fb_mmc_boot_ops(struct blk_desc *dev_desc, void *buffer,
 			pr_err("Failed to erase EMMC_BOOT%d\n", hwpart);
 			fastboot_fail("Failed to erase EMMC_BOOT part",
 				      response);
-			return;
+			goto out;
 		}
 	}
 
 	fastboot_okay(NULL, response);
+
+out:
+	if (blk_dselect_hwpart(dev_desc, 0)) {
+		pr_err("Failed to select hwpart\n");
+	}
 }
 #endif
 
