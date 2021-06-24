@@ -517,18 +517,22 @@ void fastboot_mmc_flash_write(const char *cmd, void *download_buffer,
 	struct disk_partition info;
 
 #ifdef CONFIG_FASTBOOT_MMC_BOOT_SUPPORT
+	lbaint_t offset;
+
 	if (strcmp(cmd, CONFIG_FASTBOOT_MMC_BOOT1_NAME) == 0) {
+		offset = CONFIG_FASTBOOT_MMC_BOOT1_OFFSET;
 		dev_desc = fastboot_mmc_get_dev(response);
 		if (dev_desc)
 			fb_mmc_boot_ops(dev_desc, download_buffer, 1,
-					download_bytes, 0, response);
+					download_bytes, offset, response);
 		return;
 	}
 	if (strcmp(cmd, CONFIG_FASTBOOT_MMC_BOOT2_NAME) == 0) {
+		offset = CONFIG_FASTBOOT_MMC_BOOT2_OFFSET;
 		dev_desc = fastboot_mmc_get_dev(response);
 		if (dev_desc)
 			fb_mmc_boot_ops(dev_desc, download_buffer, 2,
-					download_bytes, 0, response);
+					download_bytes, offset, response);
 		return;
 	}
 #endif
