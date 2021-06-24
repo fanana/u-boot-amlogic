@@ -221,7 +221,7 @@ static int fb_mmc_erase_mmc_hwpart(struct blk_desc *dev_desc)
 	}
 
 	printf("........ erased %lu bytes from mmc hwpart[%u]\n",
-	       dev_desc->lba * dev_desc->blksz, dev_desc->hwpart);
+	       blks * dev_desc->blksz, dev_desc->hwpart);
 
 	return 0;
 }
