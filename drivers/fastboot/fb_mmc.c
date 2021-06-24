@@ -207,21 +207,27 @@ static void write_raw_image(struct blk_desc *dev_desc,
 
 #if defined(CONFIG_FASTBOOT_MMC_BOOT_SUPPORT) || \
 	defined(CONFIG_FASTBOOT_MMC_USER_SUPPORT)
-static int fb_mmc_erase_mmc_hwpart(struct blk_desc *dev_desc)
+static int fb_mmc_erase_mmc_hwpart(struct blk_desc *dev_desc, lbaint_t offset)
 {
 	lbaint_t blks;
+	lbaint_t blkcnt;
 
 	debug("Start Erasing mmc hwpart[%u]...\n", dev_desc->hwpart);
 
-	blks = fb_mmc_blk_write(dev_desc, 0, dev_desc->lba, NULL);
+	blkcnt = dev_desc->lba - offset;
+	if (blkcnt < 0) {
+		pr_err("Failed to erase mmc hwpart[%u]: blkcnt < 0\n", dev_desc->hwpart);
+		return 1;
+	}
 
-	if (blks != dev_desc->lba) {
+	blks = fb_mmc_blk_write(dev_desc, offset, blkcnt, NULL);
+	if (blks != blkcnt) {
 		pr_err("Failed to erase mmc hwpart[%u]\n", dev_desc->hwpart);
 		return 1;
 	}
 
-	printf("........ erased %lu bytes from mmc hwpart[%u]\n",
-	       blks * dev_desc->blksz, dev_desc->hwpart);
+	printf("........ erased %lu bytes from mmc hwpart[%u] at offset " LBAFU "\n",
+	       blks * dev_desc->blksz, dev_desc->hwpart, offset);
 
 	return 0;
 }
@@ -269,7 +275,7 @@ static void fb_mmc_boot_ops(struct blk_desc *dev_desc, void *buffer,
 		printf("........ wrote %lu bytes to EMMC_BOOT%d\n",
 		       blkcnt * blksz, hwpart);
 	} else { /* erase */
-		if (fb_mmc_erase_mmc_hwpart(dev_desc)) {
+		if (fb_mmc_erase_mmc_hwpart(dev_desc, 0)) {
 			pr_err("Failed to erase EMMC_BOOT%d\n", hwpart);
 			fastboot_fail("Failed to erase EMMC_BOOT part",
 				      response);
@@ -675,7 +681,7 @@ void fastboot_mmc_erase(const char *cmd, char *response)
 		if (!dev_desc)
 			return;
 
-		if (fb_mmc_erase_mmc_hwpart(dev_desc))
+		if (fb_mmc_erase_mmc_hwpart(dev_desc, 0))
 			fastboot_fail("Failed to erase EMMC_USER", response);
 		else
 			fastboot_okay(NULL, response);
