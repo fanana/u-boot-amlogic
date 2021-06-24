@@ -231,7 +231,7 @@ static int fb_mmc_erase_mmc_hwpart(struct blk_desc *dev_desc, lbaint_t offset)
 
 #ifdef CONFIG_FASTBOOT_MMC_BOOT_SUPPORT
 static void fb_mmc_boot_ops(struct blk_desc *dev_desc, void *buffer,
-			    int hwpart, u32 buff_sz, char *response)
+			    int hwpart, u32 buff_sz, lbaint_t offset, char *response)
 {
 	lbaint_t blkcnt;
 	lbaint_t blks;
@@ -251,7 +251,7 @@ static void fb_mmc_boot_ops(struct blk_desc *dev_desc, void *buffer,
 		blkcnt = ((buff_sz + (blksz - 1)) & ~(blksz - 1));
 		blkcnt = lldiv(blkcnt, blksz);
 
-		if (blkcnt > dev_desc->lba) {
+		if (blkcnt > (dev_desc->lba - offset)) {
 			pr_err("Image size too large\n");
 			fastboot_fail("Image size too large", response);
 			return;
@@ -259,7 +259,7 @@ static void fb_mmc_boot_ops(struct blk_desc *dev_desc, void *buffer,
 
 		debug("Start Flashing Image to EMMC_BOOT%d...\n", hwpart);
 
-		blks = fb_mmc_blk_write(dev_desc, 0, blkcnt, buffer);
+		blks = fb_mmc_blk_write(dev_desc, offset, blkcnt, buffer);
 
 		if (blks != blkcnt) {
 			pr_err("Failed to write EMMC_BOOT%d\n", hwpart);
@@ -268,10 +268,10 @@ static void fb_mmc_boot_ops(struct blk_desc *dev_desc, void *buffer,
 			return;
 		}
 
-		printf("........ wrote %lu bytes to EMMC_BOOT%d\n",
-		       blkcnt * blksz, hwpart);
+		printf("........ wrote %lu bytes to EMMC_BOOT%d at offset " LBAFU "\n",
+		       blkcnt * blksz, hwpart, offset);
 	} else { /* erase */
-		if (fb_mmc_erase_mmc_hwpart(dev_desc, 0)) {
+		if (fb_mmc_erase_mmc_hwpart(dev_desc, offset)) {
 			pr_err("Failed to erase EMMC_BOOT%d\n", hwpart);
 			fastboot_fail("Failed to erase EMMC_BOOT part",
 				      response);
@@ -521,14 +521,14 @@ void fastboot_mmc_flash_write(const char *cmd, void *download_buffer,
 		dev_desc = fastboot_mmc_get_dev(response);
 		if (dev_desc)
 			fb_mmc_boot_ops(dev_desc, download_buffer, 1,
-					download_bytes, response);
+					download_bytes, 0, response);
 		return;
 	}
 	if (strcmp(cmd, CONFIG_FASTBOOT_MMC_BOOT2_NAME) == 0) {
 		dev_desc = fastboot_mmc_get_dev(response);
 		if (dev_desc)
 			fb_mmc_boot_ops(dev_desc, download_buffer, 2,
-					download_bytes, response);
+					download_bytes, 0, response);
 		return;
 	}
 #endif
@@ -650,14 +650,14 @@ void fastboot_mmc_erase(const char *cmd, char *response)
 		/* erase EMMC boot1 */
 		dev_desc = fastboot_mmc_get_dev(response);
 		if (dev_desc)
-			fb_mmc_boot_ops(dev_desc, NULL, 1, 0, response);
+			fb_mmc_boot_ops(dev_desc, NULL, 1, 0, 0, response);
 		return;
 	}
 	if (strcmp(cmd, CONFIG_FASTBOOT_MMC_BOOT2_NAME) == 0) {
 		/* erase EMMC boot2 */
 		dev_desc = fastboot_mmc_get_dev(response);
 		if (dev_desc)
-			fb_mmc_boot_ops(dev_desc, NULL, 2, 0, response);
+			fb_mmc_boot_ops(dev_desc, NULL, 2, 0, 0, response);
 		return;
 	}
 #endif
