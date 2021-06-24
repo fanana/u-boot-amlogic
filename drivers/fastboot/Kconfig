@@ -133,6 +133,17 @@ config FASTBOOT_MMC_BOOT1_NAME
 	  defined here.
 	  The default target name for updating EMMC_BOOT1 is "mmc0boot0".
 
+config FASTBOOT_MMC_BOOT1_OFFSET
+	int "LBA offset for updating EMMC_BOOT1"
+	depends on FASTBOOT_MMC_BOOT_SUPPORT
+        default 0
+	help
+	  The fastboot "flash" and "erase" commands support operations on
+	  EMMC_BOOT1. On some boards, the first LBAs should never be flashed.
+          The value defined here passes a block offset which allows to skip
+          a number of blocks from the beginning.
+
+
 config FASTBOOT_MMC_BOOT2_NAME
 	string "Target name for updating EMMC_BOOT2"
 	depends on FASTBOOT_MMC_BOOT_SUPPORT
@@ -143,6 +154,16 @@ config FASTBOOT_MMC_BOOT2_NAME
 	  the "fastboot flash" and "fastboot erase" commands match the value
 	  defined here.
 	  The default target name for updating EMMC_BOOT2 is "mmc0boot1".
+
+config FASTBOOT_MMC_BOOT2_OFFSET
+	int "LBA offset for updating EMMC_BOOT2"
+	depends on FASTBOOT_MMC_BOOT_SUPPORT
+	default 0
+	help
+	  The fastboot "flash" and "erase" commands support operations on
+	  EMMC_BOOT2. On some boards, the first LBAs should never be flashed.
+          The value defined here passes a block offset which allows to skip
+          a number of blocks from the beginning.
 
 config FASTBOOT_MMC_USER_SUPPORT
 	bool "Enable eMMC userdata partition flash/erase"
