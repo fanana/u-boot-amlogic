@@ -420,6 +420,7 @@ static int fastboot_tx_write_str(const char *buffer)
 
 static void compl_do_reset(struct usb_ep *ep, struct usb_request *req)
 {
+	usb_gadget_release(0);
 	do_reset(NULL, 0, 0, NULL);
 }
 
