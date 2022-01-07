@@ -701,6 +701,10 @@ void fastboot_mmc_erase(const char *cmd, char *response)
 		return;
 	}
 
+	if (blk_dselect_hwpart(dev_desc, 0)) {
+		pr_err("Failed to select hwpart\n");
+	}
+
 	printf("........ erased " LBAFU " bytes from '%s'\n",
 	       blks_size * info.blksz, cmd);
 	fastboot_okay(NULL, response);
