@@ -15,6 +15,8 @@
 #include <asm/arch/sm.h>
 #include <asm/global_data.h>
 #include <i2c.h>
+#include <linux/psci.h>
+#include <reset.h>
 #include "khadas-mcu.h"
 
 int mmc_get_env_dev(void)
@@ -187,4 +189,27 @@ int misc_init_r(void)
 	}
 
 	return 0;
+}
+
+void reset_misc(void)
+{
+	struct reset_ctl usb_reset;
+	struct udevice *dev;
+	ofnode node;
+	int ret;
+
+	node = ofnode_by_compatible(ofnode_null(), "amlogic,meson-g12a-usb-ctrl");
+	if (!ofnode_valid(node))
+		printf("vim3: cannot find amlogic,meson-g12a-usb-ctrl node\n");
+
+	ret = reset_get_by_index_nodev(node, 0, &usb_reset);
+	if (ret < 0)
+		printf("vim3: cannot find usb node reset property\n");
+
+	ret = reset_assert(&usb_reset);
+	if (ret < 0)
+		printf("vim3: cannot assert usb reset\n");
+
+	uclass_get_device_by_name(UCLASS_FIRMWARE, "psci", &dev);
+	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_RESET, 0, 0, 0);
 }
