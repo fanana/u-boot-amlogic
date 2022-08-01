@@ -236,6 +236,7 @@
 #define BOOTENV_DEV_SYSTEM(devtypeu, devtypel, instance) \
 	"bootcmd_system=" \
 		"echo Loading Android " BOOT_PARTITION " partition...;" \
+		"setenv vloadaddr 0x50080000;" \
 		"mmc dev ${mmcdev};" \
 		"setenv bootargs ${bootargs} androidboot.serialno=${serial#};" \
 		AB_SELECT_SLOT \
@@ -243,11 +244,16 @@
 		AVB_VERIFY_CHECK \
 		"part start mmc ${mmcdev} " BOOT_PARTITION "${slot_suffix} boot_start;" \
 		"part size mmc ${mmcdev} " BOOT_PARTITION "${slot_suffix} boot_size;" \
+		"part start mmc ${mmcdev} vendor_boot${slot_suffix} vendor_boot_start;" \
+		"part size  mmc ${mmcdev} vendor_boot${slot_suffix} vendor_boot_size;" \
 		"if mmc read ${loadaddr} ${boot_start} ${boot_size}; then " \
-			PREPARE_FDT \
-			"setenv bootargs \"${bootargs} " AB_BOOTARGS "\"  ; " \
-			"echo Running Android...;" \
-			BOOT_CMD \
+			"if mmc read $vloadaddr ${vendor_boot_start} ${vendor_boot_size}; then " \
+				"abootimg addr $loadaddr $vloadaddr;"\
+				PREPARE_FDT \
+				"setenv bootargs \"${bootargs} " AB_BOOTARGS "\"  ; " \
+				"echo Running Android...;" \
+				BOOT_CMD \
+			"fi;" \
 		"fi;" \
 		"echo Failed to boot Android...;\0"
 
@@ -300,7 +306,7 @@
 	"scriptaddr=0x08000000\0"                                     \
 	"kernel_addr_r=0x01080000\0"                                  \
 	"pxefile_addr_r=0x01080000\0"                                 \
-	"ramdisk_addr_r=0x13000000\0"                                 \
+	"ramdisk_addr_r=0x30000000\0"                                 \
 	"fdtfile=amlogic/" CONFIG_DEFAULT_DEVICE_TREE ".dtb\0"        \
 	BOOTENV
 
