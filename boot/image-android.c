@@ -13,6 +13,7 @@
 #include <asm/unaligned.h>
 #include <mapmem.h>
 #include <linux/libfdt.h>
+#include <xbc.h>
 
 #define ANDROID_IMAGE_DEFAULT_KERNEL_ADDR	0x10008000
 
@@ -115,6 +116,7 @@ void android_vendor_boot_image_v3_v4_get_end(const struct andr_vendor_boot_img_h
 	data->image_name = hdr->name;
 	data->kernel_load_addr = hdr->kernel_addr;
 	data->ramdisk_load_addr = hdr->ramdisk_addr;
+	data->bootconfig_size = hdr->bootconfig_size;
 	end = (ulong)hdr;
 	end += hdr->page_size;
 	if (hdr->vendor_ramdisk_size) {
@@ -129,7 +131,14 @@ void android_vendor_boot_image_v3_v4_get_end(const struct andr_vendor_boot_img_h
 
 	end += ALIGN(hdr->dtb_size, hdr->page_size);
 	end += ALIGN(hdr->vendor_ramdisk_table_size, hdr->page_size);
-	end += ALIGN(hdr->bootconfig_size, hdr->page_size);
+
+	data->bootconfig_addr = end;
+	if (hdr->bootconfig_size) {
+		data->bootconfig_size += addBootConfigTrailer(data->bootconfig_addr, data->bootconfig_size);
+		data->ramdisk_size += data->bootconfig_size;
+	}
+
+	end += ALIGN(data->bootconfig_size, hdr->page_size);
 	data->boot_img_total_size = end - (ulong)hdr;
 }
 
@@ -320,6 +329,10 @@ int android_image_get_ramdisk(const void *boot_img, const void *vendor_boot_img,
 		ulong ramdisk_ptr = img_data.ramdisk_ptr;
 		memcpy((void *)(ramdisk_ptr), (void *)img_data.vendor_ramdisk_ptr, img_data.vendor_ramdisk_size);
 		memcpy((void *)(ramdisk_ptr + img_data.vendor_ramdisk_size), (void*)img_data.ramdisk_ptr, img_data.boot_ramdisk_size);
+		if (img_data.bootconfig_size) {
+			memcpy((void *)(ramdisk_ptr + img_data.vendor_ramdisk_size + img_data.boot_ramdisk_size),
+				       	(void*)img_data.bootconfig_addr, img_data.bootconfig_size);
+		}
 	}
 
 	printf("RAM disk load addr 0x%08lx size %u KiB\n",

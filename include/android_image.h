@@ -332,7 +332,8 @@ struct andr_image_data {
 	uint32_t dtb_size;
 	ulong recovery_dtbo_ptr;
 	uint32_t recovery_dtbo_size;
-
+	ulong bootconfig_addr;
+	ulong bootconfig_size;
 	const char *kcmdline;
 	const char *kcmdline_extra;
 	const char *image_name;
