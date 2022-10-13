@@ -513,7 +513,7 @@ void android_print_contents(const struct andr_boot_img_hdr_v0_v1_v2 *hdr)
 		       hdr->header_size);
 	}
 
-	if (hdr->header_version >= 2) {
+	if (hdr->header_version == 2) {
 		printf("%sdtb size:             %x\n", p, hdr->dtb_size);
 		printf("%sdtb addr:             %llx\n", p, hdr->dtb_addr);
 	}
