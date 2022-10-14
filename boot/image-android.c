@@ -271,6 +271,11 @@ int android_image_get_ramdisk(const struct andr_boot_img_hdr_v0_v1_v2 *hdr,
 int android_image_get_second(const struct andr_boot_img_hdr_v0_v1_v2 *hdr,
 			      ulong *second_data, ulong *second_len)
 {
+	if (hdr->header_version > 2) {
+		printf("Second stage bootloader is only supported for boot image version <= 2");
+		return -1;
+	}
+
 	if (!hdr->second_size) {
 		*second_data = *second_len = 0;
 		return -1;
