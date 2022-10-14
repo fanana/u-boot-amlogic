@@ -35,6 +35,7 @@ static void android_boot_image_v3_v4_get_data(const struct andr_boot_img_hdr_v3_
 
 	data->kcmdline = hdr->cmdline;
 	data->header_version = hdr->header_version;
+	data->ramdisk_ptr = env_get_ulong("ramdisk_addr_r", 16, 0);
 
 	/*
 	 * The header takes a full page, the remaining components are aligned
@@ -327,6 +328,7 @@ int android_image_get_ramdisk(const struct andr_boot_img_hdr_v0_v1_v2 *hdr,
 			      const void *vendor_boot_img, ulong *rd_data, ulong *rd_len)
 {
 	struct andr_image_data img_data = {0};
+	ulong ramdisk_ptr;
 
 	if (!android_image_get_data(hdr, vendor_boot_img, &img_data))
 		return -EINVAL;
@@ -334,6 +336,13 @@ int android_image_get_ramdisk(const struct andr_boot_img_hdr_v0_v1_v2 *hdr,
 	if (!img_data.ramdisk_size) {
 		*rd_data = *rd_len = 0;
 		return -1;
+	}
+	if (img_data.header_version > 2) {
+		ramdisk_ptr = img_data.ramdisk_ptr;
+		memcpy((void *)(ramdisk_ptr), (void *)img_data.vendor_ramdisk_ptr,
+		       img_data.vendor_ramdisk_size);
+		memcpy((void *)(ramdisk_ptr + img_data.vendor_ramdisk_size),
+		       (void *)img_data.ramdisk_ptr, img_data.boot_ramdisk_size);
 	}
 
 	printf("RAM disk load addr 0x%08lx size %u KiB\n",
