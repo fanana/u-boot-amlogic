@@ -249,19 +249,22 @@ ulong android_image_get_kcomp(const struct andr_boot_img_hdr_v0_v1_v2 *hdr)
 int android_image_get_ramdisk(const struct andr_boot_img_hdr_v0_v1_v2 *hdr,
 			      ulong *rd_data, ulong *rd_len)
 {
-	if (!hdr->ramdisk_size) {
+	struct andr_image_data img_data = {0};
+
+	if (!android_image_get_data(hdr, &img_data))
+		return -EINVAL;
+
+	if (!img_data.ramdisk_size) {
 		*rd_data = *rd_len = 0;
 		return -1;
 	}
 
-	printf("RAM disk load addr 0x%08x size %u KiB\n",
-	       hdr->ramdisk_addr, DIV_ROUND_UP(hdr->ramdisk_size, 1024));
+	printf("RAM disk load addr 0x%08lx size %u KiB\n",
+	       img_data.ramdisk_ptr, DIV_ROUND_UP(img_data.ramdisk_size, 1024));
 
-	*rd_data = (unsigned long)hdr;
-	*rd_data += hdr->page_size;
-	*rd_data += ALIGN(hdr->kernel_size, hdr->page_size);
+	*rd_data = img_data.ramdisk_ptr;
 
-	*rd_len = hdr->ramdisk_size;
+	*rd_len = img_data.ramdisk_size;
 	return 0;
 }
 
