@@ -130,27 +130,30 @@ static ulong android_image_get_kernel_addr(const struct andr_boot_img_hdr_v0_v1_
 int android_image_get_kernel(const struct andr_boot_img_hdr_v0_v1_v2 *hdr, int verify,
 			     ulong *os_data, ulong *os_len)
 {
+	struct andr_image_data img_data = {0};
 	u32 kernel_addr = android_image_get_kernel_addr(hdr);
-	const struct legacy_img_hdr *ihdr = (const struct legacy_img_hdr *)
-		((uintptr_t)hdr + hdr->page_size);
+	const struct legacy_img_hdr *ihdr;
+
+	if (!android_image_get_data(hdr, &img_data))
+		return -EINVAL;
 
 	/*
 	 * Not all Android tools use the id field for signing the image with
 	 * sha1 (or anything) so we don't check it. It is not obvious that the
 	 * string is null terminated so we take care of this.
 	 */
-	strncpy(andr_tmp_str, hdr->name, ANDR_BOOT_NAME_SIZE);
+	strncpy(andr_tmp_str, img_data.image_name, ANDR_BOOT_NAME_SIZE);
 	andr_tmp_str[ANDR_BOOT_NAME_SIZE] = '\0';
 	if (strlen(andr_tmp_str))
 		printf("Android's image name: %s\n", andr_tmp_str);
 
 	printf("Kernel load addr 0x%08x size %u KiB\n",
-	       kernel_addr, DIV_ROUND_UP(hdr->kernel_size, 1024));
+	       kernel_addr, DIV_ROUND_UP(img_data.kernel_size, 1024));
 
 	int len = 0;
-	if (*hdr->cmdline) {
-		printf("Kernel command line: %s\n", hdr->cmdline);
-		len += strlen(hdr->cmdline);
+	if (*img_data.kcmdline) {
+		printf("Kernel command line: %s\n", img_data.kcmdline);
+		len += strlen(img_data.kcmdline);
 	}
 
 	char *bootargs = env_get("bootargs");
@@ -168,24 +171,25 @@ int android_image_get_kernel(const struct andr_boot_img_hdr_v0_v1_v2 *hdr, int v
 		strcpy(newbootargs, bootargs);
 		strcat(newbootargs, " ");
 	}
-	if (*hdr->cmdline)
-		strcat(newbootargs, hdr->cmdline);
+
+	if (*img_data.kcmdline)
+		strcat(newbootargs, img_data.kcmdline);
 
 	env_set("bootargs", newbootargs);
 
+	ihdr = (const struct legacy_img_hdr *)img_data.kernel_ptr;
 	if (os_data) {
 		if (image_get_magic(ihdr) == IH_MAGIC) {
 			*os_data = image_get_data(ihdr);
 		} else {
-			*os_data = (ulong)hdr;
-			*os_data += hdr->page_size;
+			*os_data = img_data.kernel_ptr;
 		}
 	}
 	if (os_len) {
 		if (image_get_magic(ihdr) == IH_MAGIC)
 			*os_len = image_get_data_size(ihdr);
 		else
-			*os_len = hdr->kernel_size;
+			*os_len = img_data.kernel_size;
 	}
 	return 0;
 }
