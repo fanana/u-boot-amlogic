@@ -86,7 +86,7 @@ bool android_image_get_data(const void *boot_hdr, struct andr_image_data *data)
 	return true;
 }
 
-static ulong android_image_get_kernel_addr(const struct andr_boot_img_hdr_v0_v1_v2 *hdr)
+static ulong android_image_get_kernel_addr(struct andr_image_data *img_data)
 {
 	/*
 	 * All the Android tools that generate a boot.img use this
@@ -99,17 +99,17 @@ static ulong android_image_get_kernel_addr(const struct andr_boot_img_hdr_v0_v1_
 	 *
 	 * Otherwise, we will return the actual value set by the user.
 	 */
-	if (hdr->kernel_addr == ANDROID_IMAGE_DEFAULT_KERNEL_ADDR)
-		return (ulong)hdr + hdr->page_size;
+	if (img_data->kernel_addr  == ANDROID_IMAGE_DEFAULT_KERNEL_ADDR)
+		return img_data->kernel_ptr;
 
 	/*
 	 * abootimg creates images where all load addresses are 0
 	 * and we need to fix them.
 	 */
-	if (hdr->kernel_addr == 0 && hdr->ramdisk_addr == 0)
+	if (img_data->kernel_addr == 0 && img_data->ramdisk_addr == 0)
 		return env_get_ulong("kernel_addr_r", 16, 0);
 
-	return hdr->kernel_addr;
+	return img_data->kernel_addr;
 }
 
 /**
@@ -131,11 +131,13 @@ int android_image_get_kernel(const struct andr_boot_img_hdr_v0_v1_v2 *hdr, int v
 			     ulong *os_data, ulong *os_len)
 {
 	struct andr_image_data img_data = {0};
-	u32 kernel_addr = android_image_get_kernel_addr(hdr);
+	u32 kernel_addr;
 	const struct legacy_img_hdr *ihdr;
 
 	if (!android_image_get_data(hdr, &img_data))
 		return -EINVAL;
+
+	kernel_addr = android_image_get_kernel_addr(&img_data);
 
 	/*
 	 * Not all Android tools use the id field for signing the image with
@@ -219,7 +221,12 @@ ulong android_image_get_end(const struct andr_boot_img_hdr_v0_v1_v2 *hdr)
 
 ulong android_image_get_kload(const struct andr_boot_img_hdr_v0_v1_v2 *hdr)
 {
-	return android_image_get_kernel_addr(hdr);
+	struct andr_image_data img_data = {0};
+
+	if (!android_image_get_data(hdr, &img_data))
+		return 0;
+
+	return android_image_get_kernel_addr(&img_data);
 }
 
 ulong android_image_get_kcomp(const struct andr_boot_img_hdr_v0_v1_v2 *hdr)
