@@ -1627,6 +1627,7 @@ ulong android_image_get_kcomp(const struct andr_boot_img_hdr_v0_v1_v2 *hdr,
 void android_print_contents(const struct andr_boot_img_hdr_v0_v1_v2 *hdr);
 bool android_image_print_dtb_contents(ulong hdr_addr);
 bool is_android_boot_image_header(const struct andr_boot_img_hdr_v0_v1_v2 *boot_img);
+bool is_android_vendor_boot_image_header(const void *vendor_boot_img);
 
 /**
  * board_fit_config_name_match() - Check for a matching board name
