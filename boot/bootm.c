@@ -113,6 +113,8 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 			 char *const argv[])
 {
 	const void *os_hdr;
+	const void *vendor_boot_img;
+	const void *boot_img;
 	bool ep_found = false;
 	int ret;
 
@@ -181,14 +183,29 @@ static int bootm_find_os(struct cmd_tbl *cmdtp, int flag, int argc,
 #endif
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 	case IMAGE_FORMAT_ANDROID:
+	{
+		boot_img = os_hdr;
+		vendor_boot_img = NULL;
+#ifdef CONFIG_CMD_ABOOTIMG
+		if (_abootimg_addr != -1) {
+			boot_img = (void *)_abootimg_addr;
+			vendor_boot_img = (void *)_avendor_bootimg_addr;
+		}
+#endif
 		images.os.type = IH_TYPE_KERNEL;
-		images.os.comp = android_image_get_kcomp(os_hdr, NULL);
+		images.os.comp = android_image_get_kcomp(boot_img, vendor_boot_img);
 		images.os.os = IH_OS_LINUX;
+#ifdef CONFIG_CMD_ABOOTIMG
+		if (_avendor_bootimg_addr != -1)
+			images.os.end = 0;
+		else
+#endif
+		images.os.end = android_image_get_end(boot_img);
 
-		images.os.end = android_image_get_end(os_hdr);
-		images.os.load = android_image_get_kload(os_hdr, NULL);
+		images.os.load = android_image_get_kload(boot_img, vendor_boot_img);
 		images.ep = images.os.load;
 		ep_found = true;
+	}
 		break;
 #endif
 	default:
@@ -891,6 +908,8 @@ static const void *boot_get_kernel(struct cmd_tbl *cmdtp, int flag, int argc,
 #if CONFIG_IS_ENABLED(FIT)
 	int		os_noffset;
 #endif
+	const void *boot_img;
+	const void *vendor_boot_img;
 
 	img_addr = genimg_get_kernel_addr_fit(argc < 1 ? NULL : argv[0],
 					      &fit_uname_config,
@@ -967,10 +986,20 @@ static const void *boot_get_kernel(struct cmd_tbl *cmdtp, int flag, int argc,
 #endif
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 	case IMAGE_FORMAT_ANDROID:
+	{
+		boot_img = buf;
+		vendor_boot_img = NULL;
+#ifdef CONFIG_CMD_ABOOTIMG
+		if (_abootimg_addr != -1) {
+			boot_img = (void *)_abootimg_addr;
+			vendor_boot_img = (void *)_avendor_bootimg_addr;
+		}
+#endif
 		printf("## Booting Android Image at 0x%08lx ...\n", img_addr);
-		if (android_image_get_kernel(buf, NULL, images->verify,
+		if (android_image_get_kernel(boot_img, vendor_boot_img, images->verify,
 					     os_data, os_len))
 			return NULL;
+	}
 		break;
 #endif
 	default:

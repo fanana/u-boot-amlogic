@@ -14,8 +14,8 @@
 	(_abootimg_addr == -1 ? image_load_addr : _abootimg_addr)
 
 /* Please use abootimg_addr() macro to obtain the boot image address */
-static ulong _abootimg_addr = -1;
-static ulong _avendor_bootimg_addr = -1;
+ulong _abootimg_addr = -1;
+ulong _avendor_bootimg_addr = -1;
 
 static int abootimg_get_ver(int argc, char *const argv[])
 {
