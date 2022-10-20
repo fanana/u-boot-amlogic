@@ -18,6 +18,11 @@
 
 static char andr_tmp_str[ANDR_BOOT_ARGS_SIZE + 1];
 
+bool is_android_boot_image_header(const struct andr_boot_img_hdr_v0_v1_v2 *boot_img)
+{
+	return !memcmp(ANDR_BOOT_MAGIC, boot_img, ANDR_BOOT_MAGIC_SIZE);
+}
+
 static ulong android_image_get_kernel_addr(const struct andr_boot_img_hdr_v0_v1_v2 *hdr)
 {
 	/*
@@ -120,11 +125,6 @@ int android_image_get_kernel(const struct andr_boot_img_hdr_v0_v1_v2 *hdr, int v
 			*os_len = hdr->kernel_size;
 	}
 	return 0;
-}
-
-int android_image_check_header(const struct andr_boot_img_hdr_v0_v1_v2 *hdr)
-{
-	return memcmp(ANDR_BOOT_MAGIC, hdr->magic, ANDR_BOOT_MAGIC_SIZE);
 }
 
 ulong android_image_get_end(const struct andr_boot_img_hdr_v0_v1_v2 *hdr)
@@ -231,7 +231,7 @@ bool android_image_get_dtbo(ulong hdr_addr, ulong *addr, u32 *size)
 	bool ret = true;
 
 	hdr = map_sysmem(hdr_addr, sizeof(*hdr));
-	if (android_image_check_header(hdr)) {
+	if (!is_android_boot_image_header(hdr)) {
 		printf("Error: Boot Image header is incorrect\n");
 		ret = false;
 		goto exit;
@@ -280,7 +280,7 @@ static bool android_image_get_dtb_img_addr(ulong hdr_addr, ulong *addr)
 	bool ret = true;
 
 	hdr = map_sysmem(hdr_addr, sizeof(*hdr));
-	if (android_image_check_header(hdr)) {
+	if (!is_android_boot_image_header(hdr)) {
 		printf("Error: Boot Image header is incorrect\n");
 		ret = false;
 		goto exit;
