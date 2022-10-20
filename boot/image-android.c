@@ -415,17 +415,17 @@ exit:
 bool android_image_get_dtb_by_index(ulong hdr_addr, u32 index, ulong *addr,
 				    u32 *size)
 {
-	const struct andr_boot_img_hdr_v0_v1_v2 *hdr;
-	bool res;
+	struct andr_image_data img_data = {0};
+
+	if (!android_image_get_data((void *)hdr_addr, &img_data))
+		return false;
+
 	ulong dtb_img_addr;	/* address of DTB part in boot image */
 	u32 dtb_img_size;	/* size of DTB payload in boot image */
 	ulong dtb_addr;		/* address of DTB blob with specified index  */
 	u32 i;			/* index iterator */
 
-	res = android_image_get_dtb_img_addr(hdr_addr, &dtb_img_addr);
-	if (!res)
-		return false;
-
+	dtb_img_addr = img_data.dtb_ptr;
 	/* Check if DTB area of boot image is in DTBO format */
 	if (android_dt_check_header(dtb_img_addr)) {
 		return android_dt_get_fdt_by_index(dtb_img_addr, index, addr,
@@ -433,9 +433,7 @@ bool android_image_get_dtb_by_index(ulong hdr_addr, u32 index, ulong *addr,
 	}
 
 	/* Find out the address of DTB with specified index in concat blobs */
-	hdr = map_sysmem(hdr_addr, sizeof(*hdr));
-	dtb_img_size = hdr->dtb_size;
-	unmap_sysmem(hdr);
+	dtb_img_size = img_data.dtb_size;
 	i = 0;
 	dtb_addr = dtb_img_addr;
 	while (dtb_addr < dtb_img_addr + dtb_img_size) {
